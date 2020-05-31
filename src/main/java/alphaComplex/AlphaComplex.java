@@ -19,8 +19,4 @@ public class AlphaComplex {
         new ServerFrame().setVisible(true);
     }
 
-    public static ListDataEvent createListDataEvent(Object parent, int id) {
-        return new ListDataEvent(parent, ListDataEvent.CONTENTS_CHANGED, id, id);
-    }
-
 }

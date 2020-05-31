@@ -4,10 +4,13 @@ import alphaComplex.core.PlayerListener;
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.PlayerPanel;
+import paranoia.services.hpdmc.ParanoiaController;
 import paranoia.services.technical.CommandParser;
 import paranoia.services.technical.HelperThread;
 import paranoia.services.technical.command.ACPFCommand;
 import paranoia.services.technical.command.DisconnectCommand;
+import paranoia.services.technical.command.ParanoiaCommand;
+import paranoia.visuals.panels.ChatPanel;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -21,6 +24,7 @@ import java.util.UUID;
 public class TroubleShooterClient implements
     ACPFCommand.ParanoiaACPFListener,
     DisconnectCommand.ParanoiaDisconnectListener,
+    ParanoiaController,
     PlayerListener {
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
@@ -35,6 +39,7 @@ public class TroubleShooterClient implements
     private final UUID uuid = UUID.randomUUID();
     private final PlayerPanel visuals = new PlayerPanel(this);
     private final Object readingLock = new Object();
+    private final ChatPanel chatPanel = new ChatPanel(() -> "Computer", this);
 
     //In-game attributes
     private BufferedImage image;
@@ -49,6 +54,7 @@ public class TroubleShooterClient implements
         //Set listeners
         parser.setAcpfListener(this);
         parser.setDisconnectListener(this);
+        parser.setChatListener(chatPanel);
         visuals.updateVisuals(name, uuid.toString(), connected, id, image);
     }
 
@@ -87,7 +93,7 @@ public class TroubleShooterClient implements
         if(!connected) return;
         connected = false;
         try {
-            sendMessage(new DisconnectCommand(null).toJsonObject().toString());
+            sendCommand(new DisconnectCommand(null));
             synchronized (readingLock) { readingLock.notify(); }
             coreTechLink.close();
         } catch (IOException e) {
@@ -142,5 +148,16 @@ public class TroubleShooterClient implements
         this.gender = gender;
         this.image = image;
         visuals.updateVisuals(name, uuid.toString(), connected, id, image);
+    }
+
+    @Override
+    public boolean sendCommand(ParanoiaCommand command) {
+        sendMessage(command.toJsonObject().toString());
+        return connected;
+    }
+
+    @Override
+    public ChatPanel getChatPanel() {
+        return chatPanel;
     }
 }
