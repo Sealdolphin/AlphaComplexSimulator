@@ -1,0 +1,5 @@
+rootProject.name = 'Alpha Complex Simulator'
+
+include 'client'
+
+project(':client').projectDir = file('../ParanoiaApp')
