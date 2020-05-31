@@ -1,10 +1,15 @@
 package alphaComplex.visuals;
 
+import alphaComplex.core.networking.ParanoiaServer;
+import alphaComplex.core.networking.ServerListener;
+import alphaComplex.core.networking.ServerProperty;
 import alphaComplex.core.networking.TroubleShooterClient;
 
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import java.awt.Dimension;
 import java.util.List;
 
 public class TroubleShooterList extends JPanel {
@@ -28,7 +33,10 @@ public class TroubleShooterList extends JPanel {
 
     private void addComponentToLayout(JComponent component) {
         component.setAlignmentX(CENTER_ALIGNMENT);
-        component.setMaximumSize(component.getPreferredSize());
+        component.setMaximumSize(new Dimension(
+            Short.MAX_VALUE, component.getPreferredSize().height
+        ));
         add(component);
+        add(Box.createVerticalStrut(5));
     }
 }

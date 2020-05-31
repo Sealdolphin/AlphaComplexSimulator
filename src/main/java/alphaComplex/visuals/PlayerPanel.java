@@ -2,23 +2,32 @@ package alphaComplex.visuals;
 
 import alphaComplex.core.PlayerListener;
 import paranoia.Paranoia;
-import paranoia.core.ParanoiaPlayer;
-import paranoia.services.hpdmc.ParanoiaController;
+import paranoia.core.SecurityClearance;
+import paranoia.core.cpu.DiceRoll;
+import paranoia.core.cpu.Skill;
+import paranoia.core.cpu.Stat;
 import paranoia.services.plc.AssetManager;
+import paranoia.services.technical.command.DisconnectCommand;
+import paranoia.services.technical.command.RollCommand;
 import paranoia.visuals.custom.ParanoiaButton;
 import paranoia.visuals.custom.ParanoiaImage;
 import paranoia.visuals.messages.ParanoiaMessage;
-import paranoia.visuals.panels.ChatPanel;
 
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
@@ -29,30 +38,38 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 
+import static alphaComplex.core.networking.PlayerStatus.ROLLING;
 import static java.awt.GridBagConstraints.CENTER;
 import static java.awt.GridBagConstraints.HORIZONTAL;
 import static java.awt.GridBagConstraints.LINE_START;
+import static java.awt.GridBagConstraints.RELATIVE;
 import static java.awt.GridBagConstraints.REMAINDER;
 import static paranoia.services.plc.LayoutManager.createGrid;
+import static paranoia.services.plc.LayoutManager.panelOf;
 
 public class PlayerPanel extends JPanel {
 
     private final JLabel lbName = new JLabel();
     private final JLabel lbClone = new JLabel();
     private final JLabel lbStatus = new JLabel();
-    private final JLabel lbUUID = new JLabel();
+    private final JLabel lbUUID = new JLabel("", SwingConstants.CENTER);
     private final JLabel lbPlayerID = new JLabel();
+    private final JLabel rollStatus = new JLabel("Hasn't rolled yet", SwingConstants.CENTER);
     private final ParanoiaImage profile = new ParanoiaImage(null, true);
     private final PlayerListener listener;
     private final ParanoiaButton btnChat;
+    private final ParanoiaButton btnRoll;
 
     public PlayerPanel (PlayerListener listener) {
         setLayout(new GridBagLayout());
         this.listener = listener;
 
-        Font generalFont = AssetManager.getFont(20);
+        Font generalFont = AssetManager.getFont(18);
         lbName.setFont(generalFont);
+        lbClone.setFont(generalFont);
+        rollStatus.setFont(AssetManager.getBoldFont(12));
         lbUUID.setFont(AssetManager.getFont(15));
         lbStatus.setFont(AssetManager.getFont(20, true, true, false));
         lbPlayerID.setFont(generalFont);
@@ -68,42 +85,77 @@ public class PlayerPanel extends JPanel {
         });
 
         BufferedImage chatIcon;
+        BufferedImage rollIcon;
         try {
             chatIcon = ImageIO.read(new File(Paranoia.getParanoiaResource("ui/btnChat.png")));
+            rollIcon = ImageIO.read(new File(Paranoia.getParanoiaResource("ui/btnRoll.png")));
         } catch (IOException e) {
             e.printStackTrace();
-            chatIcon = null;
+            chatIcon = new BufferedImage(0,0,0);
+            rollIcon = new BufferedImage(0,0,0);
         }
-        btnChat = new ParanoiaButton(chatIcon);
-
+        btnChat = new ParanoiaButton(chatIcon, 25);
         btnChat.addActionListener(e -> openChatWindow(listener));
+        btnChat.setPreferredSize(new Dimension(25, 25));
+
+        btnRoll = new ParanoiaButton(rollIcon, 25);
+        btnRoll.addActionListener(e -> {
+            listener.sendCommand(new RollCommand(
+                Stat.VIOLENCE, Skill.ATHLETICS, true, true,
+                Collections.emptyMap(), Collections.emptyMap(), null
+            ));
+            listener.changeStatus(ROLLING);
+        });
+        btnRoll.setPreferredSize(new Dimension(25, 25));
 
         setUpComponents();
+        setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
     }
 
     public void setUpComponents() {
-        add(new JLabel("UUID:"), createGrid().at(0,0).anchor(LINE_START).get());
-        add(lbUUID, createGrid().at(1,0, REMAINDER, 1).anchor(CENTER).fill(HORIZONTAL).get());
-
+        add(lbUUID, createGrid().at(0,0, REMAINDER, 1).anchor(CENTER).fill(HORIZONTAL).get());
         add(profile, createGrid().at(0, 1, 1, 3).anchor(LINE_START).get());
+
         add(lbPlayerID, createGrid().at(1, 1).get());
         add(lbName, createGrid().at(2, 1).get());
-        add(new JLabel("Clone:"), createGrid().at(3, 1).anchor(LINE_START).get());
+        add(new JLabel("as"), createGrid().at(3, 1).anchor(LINE_START).get());
         add(lbClone, createGrid().at(4,1).get());
         add(new JLabel("Status:"), createGrid().at(1,2).anchor(LINE_START).get());
         add(lbStatus, createGrid().at(2,2).get());
 
-        add(btnChat, createGrid().at(1,3).get());
+        add(createBtnPanel(), createGrid().at(1, 3, REMAINDER, 1).anchor(CENTER).fill(HORIZONTAL).get());
+        add(rollStatus, createGrid().at(0,RELATIVE, REMAINDER, 1).anchor(CENTER).fill(HORIZONTAL).get());
     }
 
-    public void updateVisuals(String name, String uuid, boolean status, int id, BufferedImage image) {
+    public void updateVisuals(
+        String name, String clone,
+        SecurityClearance clearance,
+        String uuid, String status,
+        int id, BufferedImage image,
+        DiceRoll lastRoll
+    ) {
         lbName.setText(name);
+        lbClone.setText(clone);
         lbUUID.setText(uuid);
-        lbStatus.setText(status ? "ONLINE" : "OFFLINE");
-        lbStatus.setForeground(status ? new Color(98, 160, 16) : new Color(170, 30, 30));
+        lbStatus.setText(status);
+        lbStatus.setForeground(status.equals("OFFLINE") ? new Color(170, 30, 30) : new Color(98, 160, 16));
         lbPlayerID.setText("#" + id);
         profile.changeImage(image);
+            if(lastRoll != null)
+        rollStatus.setText("Last Roll: " + lastRoll.getSuccess() + " success " + (lastRoll.isComputer() ? " + Computer" : ""));
+
+        btnRoll.setEnabled(!status.equals("OFFLINE"));
+        btnChat.setEnabled(!status.equals("OFFLINE"));
+
         revalidate();
+    }
+
+    private JPanel createBtnPanel() {
+        return panelOf(new Component[]{
+            btnChat,
+            Box.createHorizontalStrut(5),
+            btnRoll
+        }, BoxLayout.LINE_AXIS);
     }
 
     private void copyUUID() {
@@ -112,7 +164,6 @@ public class PlayerPanel extends JPanel {
         );
         ParanoiaMessage.info("UUID was copied to the clipboard");
     }
-
 
     private void openChatWindow(PlayerListener player) {
         JFrame chatFrame = new JFrame();
@@ -129,10 +180,10 @@ public class PlayerPanel extends JPanel {
         JMenuItem miCopy = new JMenuItem("Copy UUID");
         JMenuItem miKick = new JMenuItem("Kick Player");
 
-        miKick.setEnabled(lbStatus.getText().equals("ONLINE"));
+        miKick.setEnabled(!lbStatus.getText().equals("OFFLINE"));
 
         miCopy.addActionListener( e -> copyUUID());
-        miKick.addActionListener( e -> listener.disconnect() );
+        miKick.addActionListener( e -> listener.sendCommand(new DisconnectCommand(null)) );
 
         popup.add(new JLabel("Actions with Player " + lbPlayerID.getText()));
         popup.addSeparator();

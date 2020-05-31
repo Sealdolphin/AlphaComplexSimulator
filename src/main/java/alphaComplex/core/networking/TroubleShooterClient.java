@@ -4,10 +4,13 @@ import alphaComplex.core.PlayerListener;
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.PlayerPanel;
+import paranoia.core.SecurityClearance;
+import paranoia.core.cpu.DiceRoll;
 import paranoia.services.hpdmc.ParanoiaController;
 import paranoia.services.technical.CommandParser;
 import paranoia.services.technical.HelperThread;
 import paranoia.services.technical.command.ACPFCommand;
+import paranoia.services.technical.command.DiceCommand;
 import paranoia.services.technical.command.DisconnectCommand;
 import paranoia.services.technical.command.ParanoiaCommand;
 import paranoia.visuals.panels.ChatPanel;
@@ -24,17 +27,20 @@ import java.util.UUID;
 public class TroubleShooterClient implements
     ACPFCommand.ParanoiaACPFListener,
     DisconnectCommand.ParanoiaDisconnectListener,
+    DiceCommand.ParanoiaDiceResultListener,
     ParanoiaController,
     PlayerListener {
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
 
+    private final ParanoiaServer parent;
     private Socket coreTechLink;
     private final CommandParser parser;
     private BufferedWriter coreTechFeed;
     private BufferedReader clientFeed;
     private Thread readerThread;
     private boolean connected;
+    private PlayerStatus status;
     private final int id;
     private final UUID uuid = UUID.randomUUID();
     private final PlayerPanel visuals = new PlayerPanel(this);
@@ -44,18 +50,24 @@ public class TroubleShooterClient implements
     //In-game attributes
     private BufferedImage image;
     private String name;
+    private String playerName = "Sealdolphin";
     private String gender;
+    private SecurityClearance clearance = SecurityClearance.INFRARED;
+    private DiceRoll lastRoll;
 
-    public TroubleShooterClient(Socket link, int id) throws IOException {
+    public TroubleShooterClient(Socket link, int id, ParanoiaServer server) throws IOException {
         this.id = id;
         this.coreTechLink = link;
+        this.parent = server;
         this.parser = new CommandParser();
         getIOStream();
         //Set listeners
         parser.setAcpfListener(this);
         parser.setDisconnectListener(this);
+        parser.setDiceListener(this);
         parser.setChatListener(chatPanel);
-        visuals.updateVisuals(name, uuid.toString(), connected, id, image);
+        status = PlayerStatus.IDLE;
+        fireDataChanged();
     }
 
     private void getIOStream() throws IOException {
@@ -87,20 +99,6 @@ public class TroubleShooterClient implements
         connected = true;
         readerThread = new Thread(this::readMessage);
         readerThread.start();
-    }
-
-    public void disconnect() {
-        if(!connected) return;
-        connected = false;
-        try {
-            sendCommand(new DisconnectCommand(null));
-            synchronized (readingLock) { readingLock.notify(); }
-            coreTechLink.close();
-        } catch (IOException e) {
-            logger.exception(e);
-        }
-        logger.info(getInfo() + ": Disconnected");
-        visuals.updateVisuals(name, uuid.toString(), connected, id, image);
     }
 
     public boolean isConnected() {
@@ -138,6 +136,10 @@ public class TroubleShooterClient implements
         }
     }
 
+    private void fireDataChanged() {
+        visuals.updateVisuals(playerName, name, clearance , uuid.toString(), status.name(), id, image, lastRoll);
+    }
+
     public PlayerPanel getVisuals() {
         return visuals;
     }
@@ -147,7 +149,8 @@ public class TroubleShooterClient implements
         this.name = name;
         this.gender = gender;
         this.image = image;
-        visuals.updateVisuals(name, uuid.toString(), connected, id, image);
+        this.clearance = SecurityClearance.RED;
+        fireDataChanged();
     }
 
     @Override
@@ -157,7 +160,36 @@ public class TroubleShooterClient implements
     }
 
     @Override
+    public void changeStatus(PlayerStatus status) {
+        this.status = status;
+        fireDataChanged();
+    }
+
+    @Override
     public ChatPanel getChatPanel() {
         return chatPanel;
+    }
+
+    public void disconnect() {
+        if(!connected) return;
+        connected = false;
+        try {
+            sendCommand(new DisconnectCommand(null));
+            synchronized (readingLock) { readingLock.notify(); }
+            coreTechLink.close();
+        } catch (IOException e) {
+            logger.exception(e);
+        }
+        logger.info(getInfo() + ": Disconnected");
+        status = PlayerStatus.OFFLINE;
+        parent.updatePlayerNumber();
+        fireDataChanged();
+    }
+
+    @Override
+    public void getResult(int success, boolean computer) {
+        status = PlayerStatus.IDLE;
+        lastRoll = new DiceRoll(success, computer);
+        fireDataChanged();
     }
 }

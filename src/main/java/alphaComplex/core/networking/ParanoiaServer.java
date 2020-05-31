@@ -15,20 +15,20 @@ public class ParanoiaServer {
 
     private ServerSocket server;
     private final List<TroubleShooterClient> troubleShooters = new ArrayList<>();
-
-    private boolean status = false;
-    private String password;
     private final List<ServerListener> listeners = new ArrayList<>();
+
+    private boolean opened = false;
+    private String password;
     private final Thread thConnection = createConnectionThread();
     private final Object acceptLock = new Object();
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
 
     public void start(int port, String password) throws IOException {
-        if(status) throw new IOException("Server is already running");
+        if(opened) throw new IOException("Server is already running");
         this.password = password;
         server = new ServerSocket(port);
-        status = true;
+        opened = true;
         listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.STATUS));
         listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.PORT));
         listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.PASSWORD));
@@ -45,13 +45,13 @@ public class ParanoiaServer {
         try {
             return server.accept();
         } catch (IOException e) {
-            if(status) logger.exception(e);
+            if(opened) logger.exception(e);
             return null;
         }
     }
 
-    public String getStatus() {
-        return status ? "ONLINE" : "OFFLINE";
+    public boolean isOpen() {
+        return opened;
     }
 
     public int getPort() {
@@ -72,7 +72,7 @@ public class ParanoiaServer {
     }
 
     private synchronized void listenToConnections() {
-        while (status) {
+        while (opened) {
             try {
                 HelperThread<Socket> socketCreator = new HelperThread<>(v -> createLink(), acceptLock);
                 socketCreator.start();
@@ -83,9 +83,9 @@ public class ParanoiaServer {
                     continue;
                 }
                 int id = troubleShooters.size();
-                TroubleShooterClient clone = new TroubleShooterClient(newClient, id);
+                TroubleShooterClient clone = new TroubleShooterClient(newClient, id, this);
                 troubleShooters.add(clone);
-                listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.PLAYERS));
+                updatePlayerNumber();
                 logger.info("New connection has been established");
                 logger.info(clone.getInfo());
             } catch (IOException | InterruptedException e) {
@@ -95,11 +95,12 @@ public class ParanoiaServer {
     }
 
     public void close() {
-        if(!status) return;
+        if(!opened) return;
         logger.info("Closing server");
         try {
-            status = false;
+            opened = false;
             troubleShooters.forEach(TroubleShooterClient::disconnect);
+            troubleShooters.clear();
             synchronized (acceptLock) { acceptLock.notify(); }
             thConnection.join();
             server.close();
@@ -107,9 +108,15 @@ public class ParanoiaServer {
             logger.exception(e);
         }
         logger.info("Server closed");
+        listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.STATUS));
+        updatePlayerNumber();
     }
 
     public TroubleShooterList createTroubleShooterList() {
         return new TroubleShooterList(troubleShooters);
+    }
+
+    public void updatePlayerNumber() {
+        listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.PLAYERS));
     }
 }
