@@ -24,7 +24,6 @@ public class LoggerWindow extends JFrame implements ParanoiaLogger.LogListener {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setTitle("Paranoia server logs");
         setMinimumSize(new Dimension(300,300));
-        setMaximumSize(new Dimension(500, Short.MAX_VALUE));
 
         createLogPanel();
 

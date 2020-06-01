@@ -4,6 +4,7 @@ import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.TroubleShooterList;
 import paranoia.services.technical.HelperThread;
+import paranoia.services.technical.command.HelloCommand;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -19,7 +20,7 @@ public class ParanoiaServer {
 
     private boolean opened = false;
     private String password;
-    private final Thread thConnection = createConnectionThread();
+    private Thread thConnection = createConnectionThread();
     private final Object acceptLock = new Object();
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
@@ -88,6 +89,11 @@ public class ParanoiaServer {
                 updatePlayerNumber();
                 logger.info("New connection has been established");
                 logger.info(clone.getInfo());
+                //Send auth request
+                clone.sendCommand(new HelloCommand(
+                    null, null,
+                    !password.isEmpty(), null)
+                );
             } catch (IOException | InterruptedException e) {
                 logger.exception(e);
             }
@@ -103,12 +109,36 @@ public class ParanoiaServer {
             troubleShooters.clear();
             synchronized (acceptLock) { acceptLock.notify(); }
             thConnection.join();
+            thConnection = createConnectionThread();
             server.close();
         } catch (IOException | InterruptedException e) {
             logger.exception(e);
         }
         logger.info("Server closed");
         listeners.forEach(l -> l.serverPropertyChanged(ServerProperty.STATUS));
+        updatePlayerNumber();
+    }
+
+    public boolean authenticate(int id, String pass) {
+        if(password != null && !password.isEmpty()){
+            try {
+                if(pass == null || !pass.equals(password)){
+                    deletePlayer(id);
+                    return false;
+                }
+            } catch (Exception e) {
+                logger.exception(e);
+                deletePlayer(id);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void deletePlayer(int id) {
+        TroubleShooterClient client = troubleShooters.get(id);
+        client.disconnect();
+        troubleShooters.remove(id);
         updatePlayerNumber();
     }
 

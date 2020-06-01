@@ -1,8 +1,5 @@
 package alphaComplex.visuals;
 
-import alphaComplex.core.networking.ParanoiaServer;
-import alphaComplex.core.networking.ServerListener;
-import alphaComplex.core.networking.ServerProperty;
 import alphaComplex.core.networking.TroubleShooterClient;
 
 import javax.swing.Box;
@@ -28,7 +25,7 @@ public class TroubleShooterList extends JPanel {
         for (TroubleShooterClient troubleShooterClient : model) {
             addComponentToLayout(troubleShooterClient.getVisuals());
         }
-        revalidate();
+        updateUI();
     }
 
     private void addComponentToLayout(JComponent component) {

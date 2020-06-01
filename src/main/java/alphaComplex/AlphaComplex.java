@@ -4,8 +4,6 @@ import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.ServerFrame;
 
-import javax.swing.event.ListDataEvent;
-
 public class AlphaComplex {
 
     public static void main(String[] args) {

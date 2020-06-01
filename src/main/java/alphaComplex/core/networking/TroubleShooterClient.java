@@ -12,6 +12,7 @@ import paranoia.services.technical.HelperThread;
 import paranoia.services.technical.command.ACPFCommand;
 import paranoia.services.technical.command.DiceCommand;
 import paranoia.services.technical.command.DisconnectCommand;
+import paranoia.services.technical.command.HelloCommand;
 import paranoia.services.technical.command.ParanoiaCommand;
 import paranoia.visuals.panels.ChatPanel;
 
@@ -28,6 +29,7 @@ public class TroubleShooterClient implements
     ACPFCommand.ParanoiaACPFListener,
     DisconnectCommand.ParanoiaDisconnectListener,
     DiceCommand.ParanoiaDiceResultListener,
+    HelloCommand.ParanoiaInfoListener,
     ParanoiaController,
     PlayerListener {
 
@@ -40,7 +42,7 @@ public class TroubleShooterClient implements
     private BufferedReader clientFeed;
     private Thread readerThread;
     private boolean connected;
-    private PlayerStatus status;
+    private PlayerStatus status = PlayerStatus.AUTHENTICATING;
     private final int id;
     private final UUID uuid = UUID.randomUUID();
     private final PlayerPanel visuals = new PlayerPanel(this);
@@ -49,8 +51,8 @@ public class TroubleShooterClient implements
 
     //In-game attributes
     private BufferedImage image;
-    private String name;
-    private String playerName = "Sealdolphin";
+    private String cloneName;
+    private String playerName;
     private String gender;
     private SecurityClearance clearance = SecurityClearance.INFRARED;
     private DiceRoll lastRoll;
@@ -65,8 +67,8 @@ public class TroubleShooterClient implements
         parser.setAcpfListener(this);
         parser.setDisconnectListener(this);
         parser.setDiceListener(this);
+        parser.setInfoListener(this);
         parser.setChatListener(chatPanel);
-        status = PlayerStatus.IDLE;
         fireDataChanged();
     }
 
@@ -131,26 +133,17 @@ public class TroubleShooterClient implements
         try {
             return clientFeed.readLine();
         } catch (IOException e) {
-            if(connected) logger.exception(e);
+            logger.exception(e);
             return null;
         }
     }
 
     private void fireDataChanged() {
-        visuals.updateVisuals(playerName, name, clearance , uuid.toString(), status.name(), id, image, lastRoll);
+        visuals.updateVisuals(playerName, cloneName, clearance , uuid.toString(), status.name(), id, image, lastRoll);
     }
 
     public PlayerPanel getVisuals() {
         return visuals;
-    }
-
-    @Override
-    public void updateProfile(String name, String gender, String[] personality, BufferedImage image) {
-        this.name = name;
-        this.gender = gender;
-        this.image = image;
-        this.clearance = SecurityClearance.RED;
-        fireDataChanged();
     }
 
     @Override
@@ -172,7 +165,6 @@ public class TroubleShooterClient implements
 
     public void disconnect() {
         if(!connected) return;
-        connected = false;
         try {
             sendCommand(new DisconnectCommand(null));
             synchronized (readingLock) { readingLock.notify(); }
@@ -180,9 +172,19 @@ public class TroubleShooterClient implements
         } catch (IOException e) {
             logger.exception(e);
         }
+        connected = false;
         logger.info(getInfo() + ": Disconnected");
         status = PlayerStatus.OFFLINE;
+        fireDataChanged();
         parent.updatePlayerNumber();
+    }
+
+    @Override
+    public void updateProfile(String name, String gender, String[] personality, BufferedImage image) {
+        this.cloneName = name;
+        this.gender = gender;
+        this.image = image;
+        this.clearance = SecurityClearance.RED;
         fireDataChanged();
     }
 
@@ -191,5 +193,14 @@ public class TroubleShooterClient implements
         status = PlayerStatus.IDLE;
         lastRoll = new DiceRoll(success, computer);
         fireDataChanged();
+    }
+
+    @Override
+    public void sayHello(String player, String password, boolean hasPassword) {
+        playerName = player;
+        if(parent.authenticate(id, password)) {
+            status = PlayerStatus.IDLE;
+            fireDataChanged();
+        }
     }
 }
