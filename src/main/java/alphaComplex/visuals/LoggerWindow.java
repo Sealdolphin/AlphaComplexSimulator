@@ -7,15 +7,19 @@ import paranoia.services.plc.AssetManager;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.html.HTMLDocument;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.io.IOException;
 
 public class LoggerWindow extends JFrame implements ParanoiaLogger.LogListener {
 
     private final ParanoiaLogger logger;
-    private final JTextArea logArea = new JTextArea();
+    private final JTextPane logArea = new JTextPane();
     private boolean autoUpdate = true;
 
     public LoggerWindow() {
@@ -36,6 +40,7 @@ public class LoggerWindow extends JFrame implements ParanoiaLogger.LogListener {
         logArea.setFont(AssetManager.getBoldFont(15));
         logArea.setEditable(false);
         logArea.setOpaque(false);
+        logArea.setContentType("text/html");
 
         JButton btnScrollDown = new JButton("Stop following");
         btnScrollDown.addActionListener( e -> {
@@ -61,8 +66,14 @@ public class LoggerWindow extends JFrame implements ParanoiaLogger.LogListener {
 
     @Override
     public void updateLogs(String log) {
-        logArea.append(log + "\n");
+        HTMLDocument doc = (HTMLDocument) logArea.getStyledDocument();
+        int end = doc.getLength();
+        try {
+            doc.insertAfterEnd(doc.getCharacterElement(end), log + "\n");
+        } catch (BadLocationException | IOException e) {
+            e.printStackTrace();
+        }
         if(autoUpdate)
-            logArea.setCaretPosition(logArea.getDocument().getLength());
+            logArea.setCaretPosition(end);
     }
 }

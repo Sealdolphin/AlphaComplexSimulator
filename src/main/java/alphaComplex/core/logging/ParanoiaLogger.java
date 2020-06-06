@@ -1,5 +1,6 @@
 package alphaComplex.core.logging;
 
+import java.awt.Color;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,12 +18,16 @@ public class ParanoiaLogger {
 
     ParanoiaLogger() {}
 
+    Color c = new Color(0, 217, 255);
+
     private enum LogLevel {
-        INFO,
-        DEBUG,
-        WARNING,
-        STACKTRACE,
-        ERROR
+        INFO("#000000"),
+        DEBUG("#000000"),
+        WARNING("#6D1111"),
+        STACKTRACE("#00D9FF"),
+        ERROR("#9E0000");
+        public String color;
+        LogLevel(String color) { this.color = color; }
     }
 
     public void addLogListener(LogListener listener) {
@@ -59,7 +64,7 @@ public class ParanoiaLogger {
 
     private void createLog(LogLevel level, String message) {
         LocalDateTime now = LocalDateTime.now();
-        String log = "[" + now.toString() + "] [" + level + "]: " + message;
+        String log = "<font color=" + level.color + ">[" + now.toString() + "] [" + level + "]: " + message + "</font><br>";
         logMessages.add(log);
         System.out.println(log);
         listeners.forEach(l -> l.updateLogs(log));
