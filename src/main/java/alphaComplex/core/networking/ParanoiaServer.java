@@ -4,7 +4,6 @@ import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.TroubleShooterList;
 import paranoia.services.technical.HelperThread;
-import paranoia.services.technical.command.HelloCommand;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -89,11 +88,8 @@ public class ParanoiaServer {
                 updatePlayerNumber();
                 logger.info("New connection has been established");
                 logger.info(clone.getInfo());
-                //Send auth request
-                clone.sendCommand(new HelloCommand(
-                    null, null,
-                    !password.isEmpty(), null)
-                );
+                //Send auth request - start timer
+                clone.sendAuthRequest(password);
             } catch (IOException | InterruptedException e) {
                 logger.exception(e);
             }
@@ -137,9 +133,12 @@ public class ParanoiaServer {
 
     public void deletePlayer(int id) {
         TroubleShooterClient client = troubleShooters.get(id);
-        client.disconnect();
-        troubleShooters.remove(id);
-        updatePlayerNumber();
+        if(client != null) {
+            client.disconnect();
+            troubleShooters.remove(id);
+            updatePlayerNumber();
+            logger.info("Player (" + id + ") has been deleted");
+        }
     }
 
     public TroubleShooterList createTroubleShooterList() {

@@ -4,6 +4,7 @@ import alphaComplex.core.PlayerListener;
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.PlayerPanel;
+import org.json.JSONException;
 import paranoia.core.SecurityClearance;
 import paranoia.core.cpu.DiceRoll;
 import paranoia.services.hpdmc.ParanoiaController;
@@ -47,6 +48,7 @@ public class TroubleShooterClient implements
     private final UUID uuid = UUID.randomUUID();
     private final PlayerPanel visuals = new PlayerPanel(this);
     private final Object readingLock = new Object();
+    private final Object authLock = new Object();
     private final ChatPanel chatPanel = new ChatPanel(() -> "Computer", this);
 
     //In-game attributes
@@ -125,6 +127,9 @@ public class TroubleShooterClient implements
                 logger.exception(e);
                 disconnect();
                 break;
+            } catch (JSONException parse) {
+                logger.exception(parse);
+                disconnect();
             }
         }
     }
@@ -200,7 +205,23 @@ public class TroubleShooterClient implements
         playerName = player;
         if(parent.authenticate(id, password)) {
             status = PlayerStatus.IDLE;
+            synchronized (authLock) {
+                authLock.notify();
+            }
             fireDataChanged();
+        }
+    }
+
+    public void sendAuthRequest(String password) throws InterruptedException {
+        sendCommand(new HelloCommand(
+            null, null,
+            !password.isEmpty(), null)
+        );
+        synchronized (authLock) {
+            authLock.wait(10000);
+        }
+        if(!status.equals(PlayerStatus.IDLE)){
+            parent.deletePlayer(id);
         }
     }
 }
