@@ -10,7 +10,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.html.HTMLDocument;
 import java.awt.BorderLayout;
 import java.awt.Dimension;

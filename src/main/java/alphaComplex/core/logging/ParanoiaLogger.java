@@ -18,13 +18,11 @@ public class ParanoiaLogger {
 
     ParanoiaLogger() {}
 
-    Color c = new Color(0, 217, 255);
-
     private enum LogLevel {
         INFO("#000000"),
         DEBUG("#000000"),
         WARNING("#6D1111"),
-        STACKTRACE("#00D9FF"),
+        STACKTRACE("#004E5C"),
         ERROR("#9E0000");
         public String color;
         LogLevel(String color) { this.color = color; }
@@ -62,11 +60,34 @@ public class ParanoiaLogger {
         createLog(LogLevel.STACKTRACE, stack);
     }
 
+    private String trimLog(String log) {
+        if(log.length() > 100) {
+            List<String> rows = new ArrayList<>();
+            StringBuilder line = new StringBuilder();
+            for (int i = 0; i < log.length(); i++) {
+                char c = log.charAt(i);
+                if(line.length() > 100 && (c == ' ' || c == ',')) {
+                    rows.add(line.toString());
+                    if(rows.size() > 5){
+                        rows.add("...(showing only the first 5 rows)");
+                        break;
+                    }
+                    line = new StringBuilder();
+                } else line.append(c);
+            }
+            rows.add(line.toString());
+            return String.join("\n", rows);
+        } else {
+            return log;
+        }
+    }
+
     private void createLog(LogLevel level, String message) {
         LocalDateTime now = LocalDateTime.now();
-        String log = "<font color=" + level.color + ">[" + now.toString() + "] [" + level + "]: " + message + "</font><br>";
+        String rawLog = "[" + now.toString() + "] [" + level + "]: " + trimLog(message);
+        String log = "<font color=" + level.color + "><b>" + rawLog + "</b></font><br>";
         logMessages.add(log);
-        System.out.println(log);
+        System.out.println(rawLog);
         listeners.forEach(l -> l.updateLogs(log));
     }
 
