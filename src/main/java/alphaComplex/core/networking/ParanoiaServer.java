@@ -13,6 +13,8 @@ import java.util.List;
 
 public class ParanoiaServer {
 
+    public static final int PROTOCOL_TIMEOUT = 10000;
+
     private ServerSocket server;
     private final List<TroubleShooterClient> troubleShooters = new ArrayList<>();
     private final List<ServerListener> listeners = new ArrayList<>();
@@ -83,7 +85,7 @@ public class ParanoiaServer {
                     continue;
                 }
                 int id = troubleShooters.size();
-                TroubleShooterClient clone = new TroubleShooterClient(newClient, id, this);
+                TroubleShooterClient clone = createTrouleShooterClient(newClient, id);
                 troubleShooters.add(clone);
                 updatePlayerNumber();
                 logger.info("New connection has been established");
@@ -94,6 +96,20 @@ public class ParanoiaServer {
                 logger.exception(e);
             }
         }
+    }
+
+    private TroubleShooterClient createTrouleShooterClient(
+        Socket newClient, int id
+    ) throws IOException, InterruptedException {
+        //Initiating Paranoia protocol:
+        //Creating socket client
+        TroubleShooterClient clone = new TroubleShooterClient(newClient, id, this);
+        //Send basic ping command
+        if(!clone.ping()){
+            throw new IOException("Socket does not follow Paranoia Protocol within timeout");
+        }
+        //Awaiting response
+        return clone;
     }
 
     public void close() {

@@ -15,6 +15,7 @@ import paranoia.services.technical.command.DiceCommand;
 import paranoia.services.technical.command.DisconnectCommand;
 import paranoia.services.technical.command.HelloCommand;
 import paranoia.services.technical.command.ParanoiaCommand;
+import paranoia.services.technical.command.PingCommand;
 import paranoia.visuals.panels.ChatPanel;
 
 import java.awt.image.BufferedImage;
@@ -31,24 +32,25 @@ public class TroubleShooterClient implements
     DisconnectCommand.ParanoiaDisconnectListener,
     DiceCommand.ParanoiaDiceResultListener,
     HelloCommand.ParanoiaInfoListener,
+    PingCommand.ParanoiaPingListener,
     ParanoiaController,
     PlayerListener {
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
 
     private final ParanoiaServer parent;
-    private Socket coreTechLink;
+    private final Socket coreTechLink;
     private final CommandParser parser;
     private BufferedWriter coreTechFeed;
     private BufferedReader clientFeed;
-    private Thread readerThread;
     private boolean connected;
+    private boolean pong = false;
     private PlayerStatus status = PlayerStatus.AUTHENTICATING;
     private final int id;
     private final UUID uuid = UUID.randomUUID();
     private final PlayerPanel visuals = new PlayerPanel(this);
     private final Object readingLock = new Object();
-    private final Object authLock = new Object();
+    private final Object responseLock = new Object();
     private final ChatPanel chatPanel = new ChatPanel(() -> "Computer", this);
 
     //In-game attributes
@@ -67,6 +69,7 @@ public class TroubleShooterClient implements
         getIOStream();
         //Set listeners
         parser.setAcpfListener(this);
+        parser.setPingListener(this);
         parser.setDisconnectListener(this);
         parser.setDiceListener(this);
         parser.setInfoListener(this);
@@ -101,7 +104,7 @@ public class TroubleShooterClient implements
 
     private void startReaderThread() {
         connected = true;
-        readerThread = new Thread(this::readMessage);
+        Thread readerThread = new Thread(this::readMessage);
         readerThread.start();
     }
 
@@ -205,8 +208,8 @@ public class TroubleShooterClient implements
         playerName = player;
         if(parent.authenticate(id, password)) {
             status = PlayerStatus.IDLE;
-            synchronized (authLock) {
-                authLock.notify();
+            synchronized (responseLock) {
+                responseLock.notify();
             }
             fireDataChanged();
         }
@@ -217,11 +220,28 @@ public class TroubleShooterClient implements
             null, null,
             !password.isEmpty(), null)
         );
-        synchronized (authLock) {
-            authLock.wait(10000);
+        synchronized (responseLock) {
+            responseLock.wait(ParanoiaServer.PROTOCOL_TIMEOUT);
         }
         if(!status.equals(PlayerStatus.IDLE)){
             parent.deletePlayer(id);
+        }
+    }
+
+    public boolean ping() throws InterruptedException {
+        pong = false;
+        sendCommand(new PingCommand());
+        synchronized (responseLock) {
+            responseLock.wait(ParanoiaServer.PROTOCOL_TIMEOUT);
+        }
+        return pong;
+    }
+
+    @Override
+    public void pong() {
+        synchronized (responseLock) {
+            pong = true;
+            responseLock.notify();
         }
     }
 }
