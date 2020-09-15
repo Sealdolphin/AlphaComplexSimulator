@@ -17,7 +17,6 @@ import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -40,6 +39,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
+import static alphaComplex.core.networking.PlayerStatus.IDLE;
+import static alphaComplex.core.networking.PlayerStatus.OFFLINE;
 import static alphaComplex.core.networking.PlayerStatus.ROLLING;
 import static java.awt.GridBagConstraints.CENTER;
 import static java.awt.GridBagConstraints.HORIZONTAL;
@@ -144,8 +145,8 @@ public class PlayerPanel extends JPanel {
             if(lastRoll != null)
         rollStatus.setText("Last Roll: " + lastRoll.getSuccess() + " success " + (lastRoll.isComputer() ? " + Computer" : ""));
 
-        btnRoll.setEnabled(!status.equals("OFFLINE"));
-        btnChat.setEnabled(!status.equals("OFFLINE"));
+        btnRoll.setEnabled(status.equals(IDLE.name()));
+        btnChat.setEnabled(!status.equals(OFFLINE.name()));
 
         revalidate();
     }

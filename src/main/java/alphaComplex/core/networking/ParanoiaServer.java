@@ -85,7 +85,7 @@ public class ParanoiaServer {
                     continue;
                 }
                 int id = troubleShooters.size();
-                TroubleShooterClient clone = createTrouleShooterClient(newClient, id);
+                TroubleShooterClient clone = createTroubleShooterClient(newClient, id);
                 troubleShooters.add(clone);
                 updatePlayerNumber();
                 logger.info("New connection has been established");
@@ -98,7 +98,7 @@ public class ParanoiaServer {
         }
     }
 
-    private TroubleShooterClient createTrouleShooterClient(
+    private TroubleShooterClient createTroubleShooterClient(
         Socket newClient, int id
     ) throws IOException, InterruptedException {
         //Initiating Paranoia protocol:

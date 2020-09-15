@@ -5,6 +5,8 @@ import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.PlayerPanel;
 import org.json.JSONException;
+import paranoia.core.ParanoiaPlayer;
+import paranoia.core.Player;
 import paranoia.core.SecurityClearance;
 import paranoia.core.cpu.DiceRoll;
 import paranoia.services.hpdmc.ParanoiaController;
@@ -51,7 +53,7 @@ public class TroubleShooterClient implements
     private final PlayerPanel visuals = new PlayerPanel(this);
     private final Object readingLock = new Object();
     private final Object responseLock = new Object();
-    private final ChatPanel chatPanel = new ChatPanel(() -> "Computer", this);
+    private final ChatPanel chatPanel = new ChatPanel(new Player("Computer"), this);
 
     //In-game attributes
     private BufferedImage image;
@@ -207,7 +209,7 @@ public class TroubleShooterClient implements
     public void sayHello(String player, String password, boolean hasPassword) {
         playerName = player;
         if(parent.authenticate(id, password)) {
-            status = PlayerStatus.IDLE;
+            status = PlayerStatus.FILLING_ACPF;
             synchronized (responseLock) {
                 responseLock.notify();
             }
@@ -223,7 +225,7 @@ public class TroubleShooterClient implements
         synchronized (responseLock) {
             responseLock.wait(ParanoiaServer.PROTOCOL_TIMEOUT);
         }
-        if(!status.equals(PlayerStatus.IDLE)){
+        if(status.equals(PlayerStatus.AUTHENTICATING)){
             parent.deletePlayer(id);
         }
     }
@@ -243,5 +245,9 @@ public class TroubleShooterClient implements
             pong = true;
             responseLock.notify();
         }
+    }
+
+    public Player asPlayer() {
+        return new Player(playerName, image);
     }
 }
