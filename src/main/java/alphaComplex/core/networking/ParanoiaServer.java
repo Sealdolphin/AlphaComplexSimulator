@@ -85,7 +85,6 @@ public class ParanoiaServer {
     private synchronized void addSocket(Socket socket) throws IOException {
         ParanoiaSocket pSocket = new ParanoiaSocket(socket);
         paranoiaSockets.add(pSocket);
-        paranoiaSockets.removeIf(s -> !s.isOpen());
         if(pSocket.isOpen())
             listeners.forEach(l -> l.receiveConnection(pSocket));
     }
@@ -120,4 +119,7 @@ public class ParanoiaServer {
         }
     }
 
+    public void clean() {
+        paranoiaSockets.removeIf(s -> !s.isOpen());
+    }
 }
