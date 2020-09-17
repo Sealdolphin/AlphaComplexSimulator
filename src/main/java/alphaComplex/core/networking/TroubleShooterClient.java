@@ -5,7 +5,6 @@ import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.PlayerPanel;
 import org.json.JSONException;
-import paranoia.core.ParanoiaPlayer;
 import paranoia.core.Player;
 import paranoia.core.SecurityClearance;
 import paranoia.core.cpu.DiceRoll;
@@ -29,6 +28,8 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.UUID;
 
+import static alphaComplex.core.networking.ParanoiaServer.PROTOCOL_TIMEOUT;
+
 public class TroubleShooterClient implements
     ACPFCommand.ParanoiaACPFListener,
     DisconnectCommand.ParanoiaDisconnectListener,
@@ -40,7 +41,7 @@ public class TroubleShooterClient implements
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
 
-    private final ParanoiaServer parent;
+    private final ParanoiaLobby parent;
     private final Socket coreTechLink;
     private final CommandParser parser;
     private BufferedWriter coreTechFeed;
@@ -63,7 +64,7 @@ public class TroubleShooterClient implements
     private SecurityClearance clearance = SecurityClearance.INFRARED;
     private DiceRoll lastRoll;
 
-    public TroubleShooterClient(Socket link, int id, ParanoiaServer server) throws IOException {
+    public TroubleShooterClient(Socket link, int id, ParanoiaLobby server) throws IOException {
         this.id = id;
         this.coreTechLink = link;
         this.parent = server;
@@ -186,7 +187,7 @@ public class TroubleShooterClient implements
         logger.info(getInfo() + ": Disconnected");
         status = PlayerStatus.OFFLINE;
         fireDataChanged();
-        parent.updatePlayerNumber();
+        //parent.updatePlayerNumber();
     }
 
     @Override
@@ -208,13 +209,13 @@ public class TroubleShooterClient implements
     @Override
     public void sayHello(String player, String password, boolean hasPassword) {
         playerName = player;
-        if(parent.authenticate(id, password)) {
+        //if(parent.authenticate(id, password)) {
             status = PlayerStatus.FILLING_ACPF;
             synchronized (responseLock) {
                 responseLock.notify();
             }
             fireDataChanged();
-        }
+        //}
     }
 
     public void sendAuthRequest(String password) throws InterruptedException {
@@ -223,10 +224,10 @@ public class TroubleShooterClient implements
             !password.isEmpty(), null)
         );
         synchronized (responseLock) {
-            responseLock.wait(ParanoiaServer.PROTOCOL_TIMEOUT);
+            responseLock.wait(PROTOCOL_TIMEOUT);
         }
         if(status.equals(PlayerStatus.AUTHENTICATING)){
-            parent.deletePlayer(id);
+            //parent.deletePlayer(id);
         }
     }
 
@@ -234,7 +235,7 @@ public class TroubleShooterClient implements
         pong = false;
         sendCommand(new PingCommand());
         synchronized (responseLock) {
-            responseLock.wait(ParanoiaServer.PROTOCOL_TIMEOUT);
+            //responseLock.wait(ParanoiaLobby.PROTOCOL_TIMEOUT);
         }
         return pong;
     }
