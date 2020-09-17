@@ -2,6 +2,7 @@ package alphaComplex.core.networking;
 
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
+import paranoia.services.technical.networking.ParanoiaSocket;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -37,7 +38,7 @@ public class ParanoiaServer {
     /**
      * The connected sockets. Not all socket can be elevated to client!
      */
-    private final List<Socket> paranoiaSockets = new ArrayList<>();
+    private final List<ParanoiaSocket> paranoiaSockets = new ArrayList<>();
 
     private Thread listeningThread;
 
@@ -81,8 +82,16 @@ public class ParanoiaServer {
         }
     }
 
-    private synchronized void addSocket(Socket socket) {
-        paranoiaSockets.add(socket);
+    private synchronized void addSocket(Socket socket) throws IOException {
+        ParanoiaSocket pSocket = new ParanoiaSocket(socket);
+        paranoiaSockets.add(pSocket);
+        paranoiaSockets.removeIf(s -> !s.isOpen());
+        if(pSocket.isOpen())
+            listeners.forEach(l -> l.receiveConnection(pSocket));
+    }
+
+    public int getSockets() {
+        return paranoiaSockets.size();
     }
 
     public void addListener(ServerListener listener) {
@@ -104,6 +113,7 @@ public class ParanoiaServer {
             try {
                 server.close();
                 listeningThread.join();
+                paranoiaSockets.clear();
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }

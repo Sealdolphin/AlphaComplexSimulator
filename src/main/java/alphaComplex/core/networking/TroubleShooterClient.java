@@ -1,6 +1,7 @@
 package alphaComplex.core.networking;
 
 import alphaComplex.core.PlayerListener;
+import alphaComplex.core.gameplay.ParanoiaLobby;
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.visuals.PlayerPanel;

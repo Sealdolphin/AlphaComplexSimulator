@@ -1,7 +1,9 @@
 package alphaComplex.core.networking;
 
+import paranoia.services.technical.networking.ParanoiaSocket;
+
 public interface ServerListener {
 
-    void serverPropertyChanged(ServerProperty property);
+    void receiveConnection(ParanoiaSocket socket);
 
 }

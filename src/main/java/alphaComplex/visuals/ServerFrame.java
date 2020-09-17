@@ -1,8 +1,7 @@
 package alphaComplex.visuals;
 
-import alphaComplex.core.networking.ParanoiaLobby;
-import alphaComplex.core.networking.ServerListener;
-import alphaComplex.core.networking.ServerProperty;
+import alphaComplex.core.gameplay.ParanoiaLobby;
+import alphaComplex.core.gameplay.ParanoiaLobbyListener;
 import paranoia.services.plc.AssetManager;
 import paranoia.visuals.custom.ParanoiaButton;
 import paranoia.visuals.messages.ParanoiaMessage;
@@ -25,28 +24,25 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
 
 import static paranoia.services.plc.LayoutManager.panelOf;
 
-public class ServerFrame extends JFrame implements ServerListener {
+public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
 
     private final JLabel lbStatus = new JLabel();
     private final JLabel lbHost = new JLabel();
     private final JLabel lbPort = new JLabel();
     private final JLabel lbPlayers = new JLabel();
-    private final ParanoiaLobby lobby = new ParanoiaLobby(this);
+    private final ParanoiaLobby lobby = new ParanoiaLobby();
     private final JLabel lbPassword = new JLabel();
     private final JButton btnOpen = new ParanoiaButton("START SERVER");
     private final JButton btnStart = new JButton("START GAME");
-//    private final TroubleShooterList playerList;
 
     public ServerFrame() {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(720,480));
         setTitle("Alpha Complex Simulator 5000");
-//        playerList = lobby.createTroubleShooterList();
-//        lobby.addListener(this);
+        lobby.addListener(this);
 
         JMenuBar menubar = new JMenuBar();
         menubar.add(createMenu());
@@ -80,16 +76,16 @@ public class ServerFrame extends JFrame implements ServerListener {
         lbHost.setText("Address: localhost");
 
         lbStatus.setFont(AssetManager.getBoldFont(20));
-        serverPropertyChanged(ServerProperty.STATUS);
+        //serverPropertyChanged(ServerProperty.STATUS);
 
         lbPort.setFont(generalfont);
-        serverPropertyChanged(ServerProperty.PORT);
+        //serverPropertyChanged(ServerProperty.PORT);
 
         lbPlayers.setFont(generalfont);
-        serverPropertyChanged(ServerProperty.PLAYERS);
+        //serverPropertyChanged(ServerProperty.PLAYERS);
 
         lbPassword.setFont(AssetManager.getFont(13, true, true, false));
-        serverPropertyChanged(ServerProperty.PASSWORD);
+        //serverPropertyChanged(ServerProperty.PASSWORD);
 
         btnOpen.setFont(generalfont);
         btnOpen.addActionListener( e -> {
@@ -133,31 +129,32 @@ public class ServerFrame extends JFrame implements ServerListener {
         menu.add(miLogs);
         return menu;
     }
-
-    @Override
-    public void serverPropertyChanged(ServerProperty property) {
-        switch (property) {
-            case STATUS:
-                lbStatus.setText(lobby.isOpen() ? "ONLINE" : "OFFLINE");
-                lbStatus.setForeground(lobby.isOpen() ? new Color(98, 160, 16) : new Color(170, 30, 30));
-                break;
-            case PASSWORD:
-                lbPassword.setText("Password: "/* + lobby.getPassword()*/);
-                break;
-            case PLAYERS:
-                lbPlayers.setText("Players: "/* + lobby.getPlayers()*/);
-//                playerList.refreshComponents();
-                break;
-            case PORT:
-                lbPort.setText("Port: "/*+ lobby.getPort()*/);
-                break;
-        }
-    }
+//
+//    @Override
+//    public void serverPropertyChanged(ServerProperty property) {
+//        switch (property) {
+//            case STATUS:
+//                lbStatus.setText(lobby.isOpen() ? "ONLINE" : "OFFLINE");
+//                lbStatus.setForeground(lobby.isOpen() ? new Color(98, 160, 16) : new Color(170, 30, 30));
+//                break;
+//        }
+//    }
 
     private void startServerOperation() {
         String port = JOptionPane.showInputDialog("Input server port:");
         if(port == null || port.isEmpty()) return;
         String password = JOptionPane.showInputDialog("Input server password (optional):");
         lobby.startServer(Integer.parseInt(port), password);
+    }
+
+    @Override
+    public void updateConnections(int connections) {
+        lbPlayers.setText("Connections: " + connections);
+    }
+
+    @Override
+    public void updateServer(String password, String port) {
+        lbPassword.setText("Password: " + password);
+        lbPort.setText("Port: " + port);
     }
 }
