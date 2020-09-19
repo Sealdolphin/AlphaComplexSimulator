@@ -129,7 +129,7 @@ public class TroubleShooterClient implements
                     break;
                 }
                 logger.info(getInfo() + ": " + line);
-                parser.parse(line);
+//                parser.parse(line);
             } catch (InterruptedException e) {
                 logger.exception(e);
                 disconnect();
@@ -160,20 +160,20 @@ public class TroubleShooterClient implements
 
     @Override
     public boolean sendCommand(ParanoiaCommand command) {
-        sendMessage(command.toJsonObject().toString());
+//        sendMessage(command.toNetworkMessage(""));
         return connected;
     }
 
     @Override
-    public void changeStatus(PlayerStatus status) {
+    public void statusChanged(PlayerStatus status) {
         this.status = status;
         fireDataChanged();
     }
 
-    @Override
-    public ChatPanel getChatPanel() {
-        return chatPanel;
-    }
+//    @Override
+//    public ChatPanel getChatPanel() {
+//        return chatPanel;
+//    }
 
     public void disconnect() {
         if(!connected) return;

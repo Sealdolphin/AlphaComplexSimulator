@@ -1,16 +1,20 @@
 package alphaComplex.core.gameplay;
 
+import alphaComplex.core.PlayerListener;
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.core.networking.ParanoiaServer;
+import alphaComplex.core.networking.PlayerStatus;
 import alphaComplex.core.networking.ServerListener;
+import paranoia.services.technical.command.ParanoiaCommand;
 import paranoia.services.technical.networking.ParanoiaSocket;
 import paranoia.services.technical.networking.SocketListener;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ParanoiaLobby implements ServerListener, SocketListener {
+public class ParanoiaLobby implements ServerListener, SocketListener, PlayerListener {
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
 
@@ -46,12 +50,25 @@ public class ParanoiaLobby implements ServerListener, SocketListener {
         //Verify connection:
         socket.addListener(this);
         //Wait for response (timeout)
-        new Thread(() -> verifySocket(socket)).start();
+        new Thread(() -> {
+            ParanoiaPlayer player = new ParanoiaPlayer(socket);
+            player.addListener(this);
+        }).start();
     }
 
     @Override
-    public void readInput(String host, String message) {
-        logger.info("Socket [" + host + "] says: " + message);
+    public void readInput(byte[] message) {
+        try {
+            ParanoiaCommand parsedCommand = ParanoiaCommand.parseCommand(message);
+            logger.info("Socket [" + parsedCommand.getHost() + "] sent a " + parsedCommand.getType() + " command");
+            //Parse command!
+        } catch (IOException e) {
+            logger.error("An error happened during reading");
+            logger.exception(e);
+        } catch (ClassNotFoundException e) {
+            logger.error("Invalid operation");
+            logger.exception(e);
+        }
     }
 
     @Override
@@ -61,18 +78,9 @@ public class ParanoiaLobby implements ServerListener, SocketListener {
         frame.updateConnections(server.getSockets());
     }
 
-    private synchronized void verifySocket(ParanoiaSocket socket) {
-        socket.sendMessage("Hello");
-        try {
-            wait(ParanoiaServer.PROTOCOL_TIMEOUT);
-        } catch (InterruptedException e) {
-            //Create player
-            e.printStackTrace();
-            return;
-        }
-        socket.destroy();
-        server.clean();
-        frame.updateConnections(server.getSockets());
+    @Override
+    public void statusChanged(PlayerStatus status) {
+        logger.info("A player status has changed to " + status);
     }
 
     public void addListener(ParanoiaLobbyListener listener) {

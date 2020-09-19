@@ -101,11 +101,11 @@ public class PlayerPanel extends JPanel {
 
         btnRoll = new ParanoiaButton(rollIcon, 25);
         btnRoll.addActionListener(e -> {
-            listener.sendCommand(new RollCommand(
-                Stat.VIOLENCE, Skill.ATHLETICS, true, true,
-                Collections.emptyMap(), Collections.emptyMap(), null
-            ));
-            listener.changeStatus(ROLLING);
+//            listener.sendCommand(new RollCommand(
+//                Stat.VIOLENCE, Skill.ATHLETICS, true, true,
+//                Collections.emptyMap(), Collections.emptyMap(), null
+//            ));
+            listener.statusChanged(ROLLING);
         });
         btnRoll.setPreferredSize(new Dimension(25, 25));
 
@@ -170,7 +170,7 @@ public class PlayerPanel extends JPanel {
         JFrame chatFrame = new JFrame();
         chatFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         chatFrame.setLayout(new BorderLayout());
-        chatFrame.add(player.getChatPanel(), BorderLayout.CENTER);
+//        chatFrame.add(player.getChatPanel(), BorderLayout.CENTER);
         chatFrame.setTitle("Feed of Player " + lbPlayerID.getText());
         chatFrame.pack();
         chatFrame.setVisible(true);
@@ -184,7 +184,7 @@ public class PlayerPanel extends JPanel {
         miKick.setEnabled(!lbStatus.getText().equals("OFFLINE"));
 
         miCopy.addActionListener( e -> copyUUID());
-        miKick.addActionListener( e -> listener.sendCommand(new DisconnectCommand(null)) );
+//        miKick.addActionListener( e -> listener.sendCommand(new DisconnectCommand(null)) );
 
         popup.add(new JLabel("Actions with Player " + lbPlayerID.getText()));
         popup.addSeparator();

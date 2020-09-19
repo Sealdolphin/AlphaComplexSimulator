@@ -154,7 +154,7 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
 
     @Override
     public void updateServer(String password, String port) {
-        lbPassword.setText("Password: " + password);
+        lbPassword.setText("Password: " + password + " ");
         lbPort.setText("Port: " + port);
     }
 }

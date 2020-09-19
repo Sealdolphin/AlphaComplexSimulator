@@ -1,6 +1,7 @@
 package alphaComplex.core.networking;
 
 public enum PlayerStatus {
+    INVALID,
     OFFLINE,
     AUTHENTICATING,
     IDLE,
