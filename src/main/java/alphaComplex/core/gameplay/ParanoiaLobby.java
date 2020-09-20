@@ -6,6 +6,7 @@ import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.core.networking.ParanoiaServer;
 import alphaComplex.core.networking.PlayerStatus;
 import alphaComplex.core.networking.ServerListener;
+import paranoia.services.technical.command.AuthResponse;
 import paranoia.services.technical.command.ParanoiaCommand;
 import paranoia.services.technical.networking.ParanoiaSocket;
 import paranoia.services.technical.networking.SocketListener;
@@ -14,7 +15,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ParanoiaLobby implements ServerListener, SocketListener, PlayerListener {
+public class ParanoiaLobby implements
+    ServerListener,
+    SocketListener,
+    PlayerListener,
+    AuthResponse.ParanoiaAuthListener
+{
 
     private final ParanoiaLogger logger = LoggerFactory.getLogger();
 
@@ -53,6 +59,7 @@ public class ParanoiaLobby implements ServerListener, SocketListener, PlayerList
         new Thread(() -> {
             ParanoiaPlayer player = new ParanoiaPlayer(socket);
             player.addListener(this);
+            player.setAuthListener(this);
         }).start();
     }
 
@@ -60,8 +67,14 @@ public class ParanoiaLobby implements ServerListener, SocketListener, PlayerList
     public void readInput(byte[] message) {
         try {
             ParanoiaCommand parsedCommand = ParanoiaCommand.parseCommand(message);
-            logger.info("Socket [" + parsedCommand.getHost() + "] sent a " + parsedCommand.getType() + " command");
+            String host = parsedCommand.getHost();
+            logger.info("Socket [" + host + "] sent a " + parsedCommand.getType() + " command");
             //Parse command!
+            players.forEach(player -> {
+                if(player.getHost().equals(host)) {
+                    player.parseCommand(parsedCommand);
+                }
+            });
         } catch (IOException e) {
             logger.error("An error happened during reading");
             logger.exception(e);
@@ -85,5 +98,12 @@ public class ParanoiaLobby implements ServerListener, SocketListener, PlayerList
 
     public void addListener(ParanoiaLobbyListener listener) {
         frame = listener;
+    }
+
+    @Override
+    public void authenticate(String player, String password) {
+        if (password.isEmpty() || password.equals(this.password)) {
+            //ignore
+        }
     }
 }
