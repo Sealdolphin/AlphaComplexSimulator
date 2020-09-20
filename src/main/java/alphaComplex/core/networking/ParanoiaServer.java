@@ -2,8 +2,7 @@ package alphaComplex.core.networking;
 
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
-import paranoia.services.technical.command.AuthResponse;
-import paranoia.services.technical.networking.ParanoiaSocket;
+import daiv.networking.ParanoiaSocket;
 
 import java.io.IOException;
 import java.net.ServerSocket;

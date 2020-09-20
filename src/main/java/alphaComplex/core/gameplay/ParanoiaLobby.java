@@ -6,10 +6,10 @@ import alphaComplex.core.logging.ParanoiaLogger;
 import alphaComplex.core.networking.ParanoiaServer;
 import alphaComplex.core.networking.PlayerStatus;
 import alphaComplex.core.networking.ServerListener;
-import paranoia.services.technical.command.AuthResponse;
-import paranoia.services.technical.command.ParanoiaCommand;
-import paranoia.services.technical.networking.ParanoiaSocket;
-import paranoia.services.technical.networking.SocketListener;
+import daiv.networking.ParanoiaSocket;
+import daiv.networking.SocketListener;
+import daiv.networking.command.AuthResponse;
+import daiv.networking.command.ParanoiaCommand;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -103,7 +103,8 @@ public class ParanoiaLobby implements
     @Override
     public void authenticate(String player, String password) {
         if (password.isEmpty() || password.equals(this.password)) {
-            //ignore
+            //TODO: do auth
+
         }
     }
 }

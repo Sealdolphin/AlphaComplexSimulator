@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    compile project(':client')
-    implementation 'org.json:json:20190722'
+    compile files('libs/DAIV-1.0-alpha.jar')
+
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }

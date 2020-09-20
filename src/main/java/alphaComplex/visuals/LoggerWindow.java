@@ -2,7 +2,6 @@ package alphaComplex.visuals;
 
 import alphaComplex.core.logging.LoggerFactory;
 import alphaComplex.core.logging.ParanoiaLogger;
-import paranoia.services.plc.AssetManager;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,7 +35,7 @@ public class LoggerWindow extends JFrame implements ParanoiaLogger.LogListener {
 
     private void createLogPanel() {
         getContentPane().setLayout(new BorderLayout());
-        logArea.setFont(AssetManager.getBoldFont(15));
+//        logArea.setFont(AssetManager.getBoldFont(15));
         logArea.setEditable(false);
         logArea.setOpaque(false);
         logArea.setContentType("text/html");

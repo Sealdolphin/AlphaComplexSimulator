@@ -1,6 +1,6 @@
 package alphaComplex.core.networking;
 
-import paranoia.services.technical.networking.ParanoiaSocket;
+import daiv.networking.ParanoiaSocket;
 
 public interface ServerListener {
 

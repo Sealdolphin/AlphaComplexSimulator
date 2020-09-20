@@ -2,10 +2,10 @@ package alphaComplex.core.gameplay;
 
 import alphaComplex.core.PlayerListener;
 import alphaComplex.core.networking.PlayerStatus;
-import paranoia.services.technical.command.AuthResponse;
-import paranoia.services.technical.command.ParanoiaCommand;
-import paranoia.services.technical.command.PingCommand;
-import paranoia.services.technical.networking.ParanoiaSocket;
+import daiv.networking.ParanoiaSocket;
+import daiv.networking.command.AuthResponse;
+import daiv.networking.command.ParanoiaCommand;
+import daiv.networking.command.PingCommand;
 
 import java.util.ArrayList;
 import java.util.List;

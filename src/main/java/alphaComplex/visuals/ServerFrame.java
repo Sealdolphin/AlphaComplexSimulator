@@ -2,9 +2,7 @@ package alphaComplex.visuals;
 
 import alphaComplex.core.gameplay.ParanoiaLobby;
 import alphaComplex.core.gameplay.ParanoiaLobbyListener;
-import paranoia.services.plc.AssetManager;
-import paranoia.visuals.custom.ParanoiaButton;
-import paranoia.visuals.messages.ParanoiaMessage;
+import daiv.ui.AssetManager;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -25,7 +23,7 @@ import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import static paranoia.services.plc.LayoutManager.panelOf;
+import static daiv.ui.LayoutManager.panelOf;
 
 public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
 
@@ -35,7 +33,7 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
     private final JLabel lbPlayers = new JLabel();
     private final ParanoiaLobby lobby = new ParanoiaLobby();
     private final JLabel lbPassword = new JLabel();
-    private final JButton btnOpen = new ParanoiaButton("START SERVER");
+    private final JButton btnOpen = new JButton("START SERVER");
     private final JButton btnStart = new JButton("START GAME");
 
     public ServerFrame() {
@@ -54,14 +52,14 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (!lobby.isOpen() || ParanoiaMessage.confirm(
-                    "You are shutting down the Alpha Complex. Continue?",
-                    ServerFrame.this
-                )){
+//                if (!lobby.isOpen() || ParanoiaMessage.confirm(
+//                    "You are shutting down the Alpha Complex. Continue?",
+//                    ServerFrame.this
+//                )){
                     lobby.close();
                     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
                     super.windowClosing(e);
-                }
+//                }
             }
         });
 
@@ -90,9 +88,9 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
         btnOpen.setFont(generalfont);
         btnOpen.addActionListener( e -> {
             if (lobby.isOpen()) {
-                if (ParanoiaMessage.confirm("You are shutting down the Alpha Complex. Continue?", ServerFrame.this)) {
+//                if (ParanoiaMessage.confirm("You are shutting down the Alpha Complex. Continue?", ServerFrame.this)) {
                     lobby.close();
-                }
+//                }
             } else {
                 startServerOperation();
             }
