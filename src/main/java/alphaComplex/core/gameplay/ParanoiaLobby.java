@@ -61,6 +61,11 @@ public class ParanoiaLobby implements
         socket.addListener(this);
         ParanoiaPlayer player = new ParanoiaPlayer(socket, sockets, this);
         players.add(player);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         lobby.updatePlayers(players);
     }
 

@@ -10,4 +10,6 @@ public interface PlayerListener {
 
     void updateStatus(PlayerStatus status);
 
+    void updateClone(Clone clone);
+
 }

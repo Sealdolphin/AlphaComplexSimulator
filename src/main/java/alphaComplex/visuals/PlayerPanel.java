@@ -1,5 +1,6 @@
 package alphaComplex.visuals;
 
+import alphaComplex.core.gameplay.Clone;
 import alphaComplex.core.gameplay.PlayerListener;
 import alphaComplex.core.networking.ServerListener;
 import alphaComplex.core.networking.state.PlayerStatus;
@@ -250,5 +251,12 @@ public class PlayerPanel extends JPanel implements PlayerListener {
     public void updateStatus(PlayerStatus status) {
         lbStatus.setText(status.name());
         updateVisuals();
+    }
+
+    @Override
+    public void updateClone(Clone clone) {
+        lbClone.setText(clone.getName());
+        lbGender.setText(clone.getGender());
+        profile.changeImage(clone.getPicture());
     }
 }

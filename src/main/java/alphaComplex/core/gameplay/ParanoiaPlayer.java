@@ -107,6 +107,12 @@ public class ParanoiaPlayer implements
         logger.info("Player " + name + " has been disconnected. Reason: " + message);
     }
 
+    @Override
+    public void defineCharacter(String name, String sector, String gender, String[] personality, byte[] profile) {
+        clone = new Clone(name, sector, gender, personality, ParanoiaCommand.imageFromBytes(profile));
+        playerView.updateClone(clone);
+    }
+
     public String getHost() {
         return connection.getAddress();
     }
