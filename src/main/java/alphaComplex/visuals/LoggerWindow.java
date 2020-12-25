@@ -20,17 +20,17 @@ public class LoggerWindow extends JFrame implements ParanoiaLogger.LogListener {
     private final JTextPane logArea = new JTextPane();
     private boolean autoUpdate = true;
 
-    public LoggerWindow() {
+    public LoggerWindow(JFrame parent) {
         this.logger = LoggerFactory.getLogger();
         logger.addLogListener(this);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setTitle("Paranoia server logs");
-        setMinimumSize(new Dimension(300,300));
-
         createLogPanel();
-
         pack();
-        setLocationRelativeTo(null);
+        setMinimumSize(new Dimension(300,300));
+        setSize(getWidth(), parent.getHeight());
+        System.out.println(this);
+        setLocation(parent.getX() - getContentPane().getWidth(), parent.getY());
     }
 
     private void createLogPanel() {

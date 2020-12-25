@@ -3,6 +3,7 @@ package alphaComplex.visuals;
 import alphaComplex.core.gameplay.ParanoiaLobby;
 import alphaComplex.core.gameplay.ParanoiaLobbyListener;
 import alphaComplex.core.gameplay.ParanoiaPlayer;
+import daiv.networking.command.ParanoiaCommand;
 import daiv.ui.AssetManager;
 import daiv.ui.custom.ParanoiaMessage;
 import daiv.ui.visuals.ParanoiaButton;
@@ -130,7 +131,7 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
     public JMenu createMenu() {
         JMenu menu = new JMenu("Settings");
         JMenuItem miLogs = new JMenuItem("Logs");
-        miLogs.addActionListener( e -> new LoggerWindow().setVisible(true));
+        miLogs.addActionListener( e -> new LoggerWindow(ServerFrame.this).setVisible(true));
         menu.add(miLogs);
         return menu;
     }

@@ -11,12 +11,14 @@ import daiv.networking.command.acpf.request.DefineRequest;
 import daiv.networking.command.acpf.request.LobbyRequest;
 import daiv.networking.command.general.DisconnectRequest;
 import daiv.networking.command.general.Ping;
+import daiv.networking.command.general.PlayerBroadcast;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ParanoiaLobby implements
     ServerListener,
@@ -52,6 +54,18 @@ public class ParanoiaLobby implements
         server.stop();
     }
 
+    public void sendBroadcast(ParanoiaCommand command) {
+        sendBroadcast(command, -1);
+    }
+
+    public void sendBroadcast(ParanoiaCommand command, int skip) {
+        players.stream().filter(
+            player -> player.getID() != skip
+        ).forEach(
+            player -> player.sendCommand(command)
+        );
+    }
+
     @Override
     public void receiveConnection(ParanoiaSocket socket) {
         int sockets = server.getSockets();
@@ -61,11 +75,6 @@ public class ParanoiaLobby implements
         socket.addListener(this);
         ParanoiaPlayer player = new ParanoiaPlayer(socket, sockets, this);
         players.add(player);
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         lobby.updatePlayers(players);
     }
 
@@ -103,26 +112,28 @@ public class ParanoiaLobby implements
     public void readInput(byte[] message) {
         try {
             ParanoiaCommand parsedCommand = ParanoiaCommand.parseCommand(message);
-            String host = parsedCommand.getHost();
+            String uuid = parsedCommand.getUUID();
             if(parsedCommand.getType() != ParanoiaCommand.CommandType.PING)
-                logger.info("Socket [" + host + "] sent a " + parsedCommand.getType() + " command");
-            //Get player
+                logger.info("Socket [" + uuid + "] sent a " + parsedCommand.getType() + " command");
+            //Get player TODO: NOT SAFE
             ParanoiaPlayer player = players.stream().filter(p ->
-                p.getHost().equals(host)).findFirst().orElse(null);
+                p.getUUID().equals(uuid)).findFirst().orElse(null);
             if(player == null) return;
             //parse command
             switch (parsedCommand.getType()) {
                 case PING:
-                    Ping.create(parsedCommand, player.getLatencyMeter()).execute();
+                    Ping.create(parsedCommand, player).execute();
                     break;
                 case LOBBY:
                     LobbyRequest.create(parsedCommand, player).execute();
+                    sendBroadcast(broadcastPlayers());
                     break;
                 case DISCONNECT:
                     DisconnectRequest.create(parsedCommand, player).execute();
                     break;
                 case ACPF:
                     DefineRequest.create(parsedCommand, player).execute();
+                    sendBroadcast(broadcastPlayers());
                     break;
                 default:
                     break;
@@ -134,6 +145,10 @@ public class ParanoiaLobby implements
             logger.error("Invalid operation");
             logger.exception(e);
         }
+    }
+
+    private PlayerBroadcast broadcastPlayers() {
+        return new PlayerBroadcast(players.stream().map(ParanoiaPlayer::broadcastSelf).collect(Collectors.toList()));
     }
 
     @Override

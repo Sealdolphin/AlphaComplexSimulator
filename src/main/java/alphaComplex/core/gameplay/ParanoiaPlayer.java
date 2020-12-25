@@ -13,6 +13,7 @@ import daiv.networking.command.acpf.request.LobbyRequest;
 import daiv.networking.command.acpf.response.LobbyResponse;
 import daiv.networking.command.general.DisconnectRequest;
 import daiv.networking.command.general.Ping;
+import daiv.networking.command.general.PlayerBroadcast;
 
 import java.time.Instant;
 import java.util.Timer;
@@ -22,6 +23,7 @@ import java.util.UUID;
 import static alphaComplex.core.networking.ParanoiaServer.PROTOCOL_TIMEOUT;
 
 public class ParanoiaPlayer implements
+    Ping.ParanoiaPingListener,
     DisconnectRequest.ParanoiaDisconnectListener,
     LobbyRequest.ParanoiaAuthValidatior,
     DefineRequest.DefineListener {
@@ -29,7 +31,7 @@ public class ParanoiaPlayer implements
     private final ParanoiaSocket connection;
 
     private String name = "???";
-    private Clone clone;
+    private Clone clone = Clone.createDummy();
     private final String uuid = UUID.randomUUID().toString();
     private final int id;
 
@@ -41,7 +43,6 @@ public class ParanoiaPlayer implements
     private PlayerListener playerView;
     private final ServerListener lobby;
 
-    private final Ping.ParanoiaPingListener latencyMeter;
     private final Object start = new Object();
 
     private final static ParanoiaLogger logger = LoggerFactory.getLogger();
@@ -50,9 +51,33 @@ public class ParanoiaPlayer implements
         connection = socket;
         this.id = id;
         this.lobby = lobby;
-        PlayerLatencyMeter latencyMeter = new PlayerLatencyMeter();
-        new Thread(latencyMeter).start();
-        this.latencyMeter = latencyMeter;
+        pong(ping);
+    }
+
+    /**
+     * Validates socket connection
+     */
+    @Override
+    public void pong(Instant pong) {
+        timeout.cancel();
+        timeout = new Timer(true);
+        timeout.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                disconnect("Connection was timed out");
+            }
+        }, PROTOCOL_TIMEOUT);
+        ping = Instant.now();
+        long latency = ping.toEpochMilli() - pong.toEpochMilli();
+        if(playerView != null)
+            playerView.updateLatency(latency);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        ping = Instant.now();
+        if(connection.isOpen()) sendCommand(new Ping(ping));
     }
 
     @Override
@@ -68,8 +93,7 @@ public class ParanoiaPlayer implements
         }
         if (status.equals(PlayerStatus.AUTH)) {
             boolean valid = lobby.authorize(inputPassword);
-            connection.sendMessage(new LobbyResponse(valid, true)
-                .toNetworkMessage(connection.getAddress()));
+            sendCommand(new LobbyResponse(valid, true));
             if(valid) {
                 status = PlayerStatus.VALID;
             }
@@ -84,10 +108,7 @@ public class ParanoiaPlayer implements
             if(hasPass) {
                 status = PlayerStatus.AUTH;
             }
-            connection.sendMessage(
-                new LobbyResponse(valid, hasPass)
-                    .toNetworkMessage(connection.getAddress())
-            );
+            sendCommand(new LobbyResponse(valid, hasPass));
         }
         playerView.updateStatus(status);
     }
@@ -102,7 +123,7 @@ public class ParanoiaPlayer implements
         if(status.equals(PlayerStatus.INIT)) lobby.kickPlayer(this);
         status = PlayerStatus.OFFLINE;
         playerView.updateStatus(status);
-        connection.sendMessage(new DisconnectRequest(message).toNetworkMessage(connection.getAddress()));
+        sendCommand(new DisconnectRequest(message));
         connection.destroy();
         logger.info("Player " + name + " has been disconnected. Reason: " + message);
     }
@@ -111,6 +132,10 @@ public class ParanoiaPlayer implements
     public void defineCharacter(String name, String sector, String gender, String[] personality, byte[] profile) {
         clone = new Clone(name, sector, gender, personality, ParanoiaCommand.imageFromBytes(profile));
         playerView.updateClone(clone);
+    }
+
+    public void sendCommand(ParanoiaCommand command) {
+        connection.sendMessage(command.toNetworkMessage(connection.getAddress(), uuid));
     }
 
     public String getHost() {
@@ -125,13 +150,14 @@ public class ParanoiaPlayer implements
         return uuid;
     }
 
-    public Ping.ParanoiaPingListener getLatencyMeter() {
-        return latencyMeter;
+    public int getID() {
+        return id;
     }
 
     public PlayerPanel createPanel() {
         PlayerPanel panel = new PlayerPanel(name, uuid, id, lobby);
         this.playerView = panel;
+        updateView();
         synchronized (start) {
             logger.info("Player [" + id + "]: created player view");
             start.notify();
@@ -139,37 +165,12 @@ public class ParanoiaPlayer implements
         return panel;
     }
 
-    private class PlayerLatencyMeter implements Ping.ParanoiaPingListener, Runnable {
-        /**
-         * Validates socket connection
-         */
-        @Override
-        public void pong(Instant pong) {
-            timeout.cancel();
-            timeout = new Timer(true);
-            timeout.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    disconnect("Connection was timed out");
-                }
-            }, PROTOCOL_TIMEOUT);
-            ping = Instant.now();
-            long latency = ping.toEpochMilli() - pong.toEpochMilli();
-            if(playerView != null)
-                playerView.updateLatency(latency);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            ping = Instant.now();
-            if(connection.isOpen())
-                connection.sendMessage(new Ping(ping).toNetworkMessage(connection.getAddress()));
-        }
+    private void updateView() {
+        playerView.updateClone(clone);
+        playerView.updateStatus(status);
+    }
 
-        @Override
-        public void run() {
-            pong(ping);
-        }
+    public PlayerBroadcast.PlayerData broadcastSelf() {
+        return new PlayerBroadcast.PlayerData(name, uuid, id, ParanoiaCommand.parseImage(clone.getPicture()));
     }
 }
