@@ -9,18 +9,14 @@ import daiv.ui.visuals.ParanoiaImage;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
@@ -29,10 +25,10 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 
 import static alphaComplex.core.networking.state.PlayerStatus.OFFLINE;
 import static alphaComplex.core.networking.state.PlayerStatus.ONLINE;
+import static daiv.Computer.getParanoiaResource;
 
 public class PlayerPanel extends JPanel implements PlayerListener {
 
@@ -78,9 +74,10 @@ public class PlayerPanel extends JPanel implements PlayerListener {
         BufferedImage chatIcon;
         BufferedImage rollIcon;
         try {
-            //TODO: need Resource manager from DAIV (abstract class)
-            chatIcon = ImageIO.read(new File(getClass().getClassLoader().getResource("ui/btnChat.png").getFile()));
-            rollIcon = ImageIO.read(new File(getClass().getClassLoader().getResource("ui/btnRoll.png").getFile()));
+            chatIcon = ImageIO.read(new File(getParanoiaResource("ui/btnChat.png")));
+            rollIcon = ImageIO.read(new File(getParanoiaResource("ui/btnRoll.png")));
+            BufferedImage mystery = ImageIO.read(new File(getParanoiaResource("ui/cloneMystery.png")));
+            profile.changeImage(mystery);
         } catch (IOException | NullPointerException e) {
             e.printStackTrace();
             chatIcon = new BufferedImage(25,25,BufferedImage.TYPE_INT_ARGB);
@@ -239,5 +236,6 @@ public class PlayerPanel extends JPanel implements PlayerListener {
     @Override
     public void updateStatus(PlayerStatus status) {
         lbStatus.setText(status.name());
+        updateVisuals();
     }
 }
