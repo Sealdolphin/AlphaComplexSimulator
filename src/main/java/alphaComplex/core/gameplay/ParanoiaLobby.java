@@ -15,6 +15,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ParanoiaLobby implements
     ServerListener,
@@ -77,6 +78,22 @@ public class ParanoiaLobby implements
     }
 
     @Override
+    public void kickPlayer(String uuid) {
+        Optional<ParanoiaPlayer> optional = players.stream().filter(p -> p.getUUID().equals(uuid)).findAny();
+        if(optional.isPresent()) {
+            ParanoiaPlayer player = optional.get();
+            player.disconnect("Player has been kicked");
+            kickPlayer(player);
+        }
+    }
+
+    @Override
+    public void kickPlayer(ParanoiaPlayer player) {
+        players.remove(player);
+        lobby.updatePlayers(players);
+    }
+
+    @Override
     public void readInput(byte[] message) {
         try {
             ParanoiaCommand parsedCommand = ParanoiaCommand.parseCommand(message);
@@ -117,11 +134,10 @@ public class ParanoiaLobby implements
     }
 
     @Override
-    public void fireTerminated() {
+    public void fireTerminated(String message) {
         logger.info("A socket has been terminated");
         server.clean();
         lobby.updateConnections(server.getSockets());
-        lobby.updatePlayers(players);
     }
 
     public void addListener(ParanoiaLobbyListener listener) {

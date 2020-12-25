@@ -1,6 +1,7 @@
 package alphaComplex.visuals;
 
 import alphaComplex.core.gameplay.PlayerListener;
+import alphaComplex.core.networking.ServerListener;
 import alphaComplex.core.networking.state.PlayerStatus;
 import daiv.ui.AssetManager;
 import daiv.ui.custom.ParanoiaMessage;
@@ -36,6 +37,7 @@ public class PlayerPanel extends JPanel implements PlayerListener {
 
     private final JLabel lbLatency = new JLabel("1000 ms");
     private final JLabel lbName = new JLabel();
+    private final JLabel lbGender = new JLabel("Unknown");
     private final JLabel lbClone = new JLabel("???");
     private final JLabel lbStatus = new JLabel(PlayerStatus.INIT.name());
     private final JLabel lbUUID = new JLabel("", SwingConstants.CENTER);
@@ -45,7 +47,7 @@ public class PlayerPanel extends JPanel implements PlayerListener {
     private final ParanoiaButton btnChat;
     private final ParanoiaButton btnRoll;
 
-    public PlayerPanel(String name, String UUID, int id) {
+    public PlayerPanel(String name, String UUID, int id, ServerListener lobby) {
         setLayout(layout);
 
         Font generalFont = AssetManager.getFont(18);
@@ -55,6 +57,7 @@ public class PlayerPanel extends JPanel implements PlayerListener {
         rollStatus.setFont(AssetManager.getBoldFont(12));
         lbUUID.setFont(AssetManager.getFont(15));
         lbStatus.setFont(AssetManager.getFont(20, true, true, false));
+        lbGender.setFont(AssetManager.getFont(15));
         lbPlayerID.setFont(generalFont);
         profile.setPreferredSize(new Dimension(100,100));
 
@@ -66,7 +69,7 @@ public class PlayerPanel extends JPanel implements PlayerListener {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if(e.getButton() == MouseEvent.BUTTON3) {
-                    createPopupMenu().show(PlayerPanel.this, e.getX(), e.getY());
+                    createPopupMenu(lobby).show(PlayerPanel.this, e.getX(), e.getY());
                 }
             }
         });
@@ -84,10 +87,12 @@ public class PlayerPanel extends JPanel implements PlayerListener {
             rollIcon = new BufferedImage(25,25,BufferedImage.TYPE_INT_ARGB);
         }
         btnChat = new ParanoiaButton(chatIcon, "Chat", 25);
+        btnChat.setEnabled(false);
         //btnChat.addActionListener(e -> openChatWindow(listener));
         btnChat.setPreferredSize(new Dimension(25, 25));
 
         btnRoll = new ParanoiaButton(rollIcon, "Roll", 25);
+        btnRoll.setEnabled(false);
 //        btnRoll.addActionListener(e -> {
 //            listener.sendCommand(new RollCommand(
 //                Stat.VIOLENCE, Skill.ATHLETICS, true, true,
@@ -104,6 +109,7 @@ public class PlayerPanel extends JPanel implements PlayerListener {
     public void setUpComponents() {
         JLabel lbAs = new JLabel("as");
         JLabel lbStatusText = new JLabel("Status:");
+        JLabel lbGenderText = new JLabel("Gender:");
         layout.setHorizontalGroup(
             layout.createSequentialGroup()
                 .addGroup(
@@ -128,6 +134,10 @@ public class PlayerPanel extends JPanel implements PlayerListener {
                                 .addComponent(lbStatusText)
                                 .addGap(5)
                                 .addComponent(lbStatus)
+                                .addGap(15)
+                                .addComponent(lbGenderText)
+                                .addGap(5)
+                                .addComponent(lbGender)
                         )
                         .addGroup(
                             layout.createSequentialGroup()
@@ -146,12 +156,12 @@ public class PlayerPanel extends JPanel implements PlayerListener {
                         .addComponent(lbUUID)
                 )
                 .addGroup(
-                    layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    layout.createParallelGroup()
                         .addComponent(profile, 128, 128, 128)
                         .addGroup(
                             layout.createSequentialGroup()
                                 .addGroup(
-                                    layout.createParallelGroup()
+                                    layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                         .addComponent(lbName)
                                         .addComponent(lbAs)
                                         .addComponent(lbClone)
@@ -161,6 +171,8 @@ public class PlayerPanel extends JPanel implements PlayerListener {
                                     layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                         .addComponent(lbStatusText)
                                         .addComponent(lbStatus)
+                                        .addComponent(lbGenderText)
+                                        .addComponent(lbGender)
                                 )
                                 .addGap(5)
                                 .addGroup(
@@ -206,15 +218,16 @@ public class PlayerPanel extends JPanel implements PlayerListener {
 //        chatFrame.setVisible(true);
 //    }
 
-    private JPopupMenu createPopupMenu() {
+    private JPopupMenu createPopupMenu(ServerListener lobby) {
         JPopupMenu popup = new JPopupMenu();
         JMenuItem miCopy = new JMenuItem("Copy UUID");
         JMenuItem miKick = new JMenuItem("Kick Player");
 
-        miKick.setEnabled(!lbStatus.getText().equals("OFFLINE"));
-
         miCopy.addActionListener( e -> copyUUID());
-//        miKick.addActionListener( e -> listener.sendCommand(new DisconnectCommand(null)) );
+        miKick.addActionListener( e -> {
+            boolean kick = ParanoiaMessage.confirm("Kicking a player will destroy this connection.\nThe citizen CANNOT reconnect after that. Continue?", this);
+            if(kick) { lobby.kickPlayer(lbUUID.getText()); }
+        });
 
         popup.add(new JLabel("Actions with Player " + lbPlayerID.getText()));
         popup.addSeparator();

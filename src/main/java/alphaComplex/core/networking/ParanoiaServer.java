@@ -97,11 +97,6 @@ public class ParanoiaServer {
         listeners.add(listener);
     }
 
-    @SuppressWarnings("Unused")
-    public void removeListener(ServerListener listener) {
-        listeners.remove(listener);
-    }
-
     public boolean isRunning() {
         return running;
     }

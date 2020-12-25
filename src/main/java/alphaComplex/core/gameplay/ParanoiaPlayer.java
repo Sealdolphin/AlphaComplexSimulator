@@ -13,7 +13,6 @@ import daiv.networking.command.general.DisconnectRequest;
 import daiv.networking.command.general.Ping;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -42,7 +41,7 @@ public class ParanoiaPlayer implements
 
     private final static ParanoiaLogger logger = LoggerFactory.getLogger();
 
-    public ParanoiaPlayer(ParanoiaSocket socket, int id, ParanoiaLobby lobby) {
+    public ParanoiaPlayer(ParanoiaSocket socket, int id, ServerListener lobby) {
         connection = socket;
         this.id = id;
         this.lobby = lobby;
@@ -54,7 +53,6 @@ public class ParanoiaPlayer implements
      */
     @Override
     public void pong(Instant pong) {
-        timeout.purge();
         timeout.cancel();
         timeout = new Timer(true);
         timeout.schedule(new TimerTask() {
@@ -65,9 +63,16 @@ public class ParanoiaPlayer implements
         }, PROTOCOL_TIMEOUT);
         ping = Instant.now();
         long latency = ping.toEpochMilli() - pong.toEpochMilli();
-        connection.sendMessage(new Ping(ping).toNetworkMessage(connection.getAddress()));
         if(listener != null)
             listener.updateLatency(latency);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        ping = Instant.now();
+        if(connection.isOpen())
+            connection.sendMessage(new Ping(ping).toNetworkMessage(connection.getAddress()));
     }
 
     @Override
@@ -85,6 +90,7 @@ public class ParanoiaPlayer implements
             if(valid) {
                 this.name = name;
                 listener.updateName(name);
+                status = PlayerStatus.VALID;
             }
             if(hasPass) {
                 status = PlayerStatus.AUTH;
@@ -102,7 +108,11 @@ public class ParanoiaPlayer implements
      */
     @Override
     public void disconnect(String message) {
+        if(!connection.isOpen()) return;
+        timeout.cancel();
+        if(status.equals(PlayerStatus.INIT)) lobby.kickPlayer(this);
         status = PlayerStatus.OFFLINE;
+        listener.updateStatus(status);
         connection.sendMessage(new DisconnectRequest(message).toNetworkMessage(connection.getAddress()));
         connection.destroy();
         logger.info("Player " + name + " has been disconnected. Reason: " + message);
@@ -116,8 +126,12 @@ public class ParanoiaPlayer implements
         return name;
     }
 
+    public String getUUID() {
+        return uuid;
+    }
+
     public PlayerPanel createPanel() {
-        PlayerPanel panel = new PlayerPanel(name, uuid, id);
+        PlayerPanel panel = new PlayerPanel(name, uuid, id, lobby);
         this.listener = panel;
         return panel;
     }

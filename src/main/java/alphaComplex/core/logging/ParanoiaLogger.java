@@ -61,6 +61,7 @@ public class ParanoiaLogger {
     }
 
     private String trimLog(String log) {
+        if(log == null) return "null";
         if(log.length() > 100) {
             List<String> rows = new ArrayList<>();
             StringBuilder line = new StringBuilder();
