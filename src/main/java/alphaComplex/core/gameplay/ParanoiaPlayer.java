@@ -1,77 +1,124 @@
 package alphaComplex.core.gameplay;
 
-import alphaComplex.core.PlayerListener;
-import alphaComplex.core.networking.PlayerStatus;
+import alphaComplex.core.logging.LoggerFactory;
+import alphaComplex.core.logging.ParanoiaLogger;
+import alphaComplex.core.networking.ServerListener;
+import alphaComplex.core.networking.state.ACPFStatus;
+import alphaComplex.core.networking.state.PlayerStatus;
+import alphaComplex.visuals.PlayerPanel;
 import daiv.networking.ParanoiaSocket;
-import daiv.networking.command.AuthResponse;
-import daiv.networking.command.ParanoiaCommand;
-import daiv.networking.command.PingCommand;
+import daiv.networking.command.acpf.request.LobbyRequest;
+import daiv.networking.command.acpf.response.LobbyResponse;
+import daiv.networking.command.general.DisconnectRequest;
+import daiv.networking.command.general.Ping;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 import static alphaComplex.core.networking.ParanoiaServer.PROTOCOL_TIMEOUT;
 
-public class ParanoiaPlayer {
+public class ParanoiaPlayer implements
+    DisconnectRequest.ParanoiaDisconnectListener,
+    LobbyRequest.ParanoiaAuthValidatior,
+    Ping.ParanoiaPingListener
+{
 
     private final ParanoiaSocket connection;
 
-    private String name = "";
+    private String name = "???";
+    private final String uuid = UUID.randomUUID().toString();
+    private final int id;
 
-    private PlayerStatus status = PlayerStatus.INVALID;
+    private Timer timeout = new Timer(true);
+    private Instant ping = Instant.now();
 
-    private final Object verifyLock = new Object();
+    private PlayerStatus status = PlayerStatus.INIT;
+    private ACPFStatus create_status = ACPFStatus.DEFINE;
+    private PlayerListener listener;
+    private final ServerListener lobby;
 
-    private final List<PlayerListener> listeners = new ArrayList<>();
+    private final static ParanoiaLogger logger = LoggerFactory.getLogger();
 
-    private AuthResponse.ParanoiaAuthListener authListener;
-
-    public ParanoiaPlayer(ParanoiaSocket socket) {
+    public ParanoiaPlayer(ParanoiaSocket socket, int id, ParanoiaLobby lobby) {
         connection = socket;
-        //Verify connection?
-        synchronized (verifyLock) {
-            socket.sendMessage(new PingCommand().toNetworkMessage(socket.getAddress()));
-            try {
-                wait(PROTOCOL_TIMEOUT);
-                if(status.equals(PlayerStatus.INVALID))
-                    socket.destroy();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                socket.destroy();
-            }
-        }
+        this.id = id;
+        this.lobby = lobby;
+        pong(ping);
     }
 
-    public void parseCommand(ParanoiaCommand command) {
-        switch (command.getType()) {
-            case AUTH:
-                changeStatus(PlayerStatus.AUTHENTICATING);
-                name = ((AuthResponse) command).getPlayerName();
-                AuthResponse.create(command, authListener).execute();
-                break;
-            case PING:
-                changeStatus(PlayerStatus.READY);
-                break;
-            default:
-                break;
+    /**
+     * Validates socket connection
+     */
+    @Override
+    public void pong(Instant pong) {
+        timeout.purge();
+        timeout.cancel();
+        timeout = new Timer(true);
+        timeout.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                disconnect("Connection was timed out");
+            }
+        }, PROTOCOL_TIMEOUT);
+        ping = Instant.now();
+        long latency = ping.toEpochMilli() - pong.toEpochMilli();
+        connection.sendMessage(new Ping(ping).toNetworkMessage(connection.getAddress()));
+        if(listener != null)
+            listener.updateLatency(latency);
+    }
+
+    @Override
+    public void authenticate(String name, String inputPassword) {
+        if (status.equals(PlayerStatus.AUTH)) {
+            boolean valid = lobby.authorize(inputPassword);
+            connection.sendMessage(new LobbyResponse(valid, true)
+                .toNetworkMessage(connection.getAddress()));
+            if(valid) {
+                status = PlayerStatus.VALID;
+            }
+        } else {
+            boolean hasPass = lobby.hasPassword();
+            boolean valid = (lobby.checkName(name) || !name.isEmpty()) && !hasPass;
+            if(valid) {
+                this.name = name;
+                listener.updateName(name);
+            }
+            if(hasPass) {
+                status = PlayerStatus.AUTH;
+            }
+            connection.sendMessage(
+                new LobbyResponse(valid, hasPass)
+                    .toNetworkMessage(connection.getAddress())
+            );
         }
+        listener.updateStatus(status);
+    }
+
+    /**
+     * Transition from any state to OFFLINE
+     */
+    @Override
+    public void disconnect(String message) {
+        status = PlayerStatus.OFFLINE;
+        connection.sendMessage(new DisconnectRequest(message).toNetworkMessage(connection.getAddress()));
+        connection.destroy();
+        logger.info("Player " + name + " has been disconnected. Reason: " + message);
     }
 
     public String getHost() {
         return connection.getAddress();
     }
 
-    public void addListener(PlayerListener listener) {
-        listeners.add(listener);
+    public String getPlayerName() {
+        return name;
     }
 
-    public void setAuthListener(AuthResponse.ParanoiaAuthListener listener) {
-        authListener = listener;
+    public PlayerPanel createPanel() {
+        PlayerPanel panel = new PlayerPanel(name, uuid, id);
+        this.listener = panel;
+        return panel;
     }
-
-    private void changeStatus(PlayerStatus status) {
-        this.status = status;
-        listeners.forEach(l -> l.statusChanged(status));
-    }
-
 }

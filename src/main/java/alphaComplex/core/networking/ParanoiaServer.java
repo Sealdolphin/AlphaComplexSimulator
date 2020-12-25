@@ -122,4 +122,8 @@ public class ParanoiaServer {
     public void clean() {
         paranoiaSockets.removeIf(s -> !s.isOpen());
     }
+
+    public String getAddress() {
+        return server.getInetAddress().getHostAddress();
+    }
 }

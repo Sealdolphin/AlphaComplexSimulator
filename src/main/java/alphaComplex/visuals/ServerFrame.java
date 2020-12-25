@@ -2,11 +2,15 @@ package alphaComplex.visuals;
 
 import alphaComplex.core.gameplay.ParanoiaLobby;
 import alphaComplex.core.gameplay.ParanoiaLobbyListener;
+import alphaComplex.core.gameplay.ParanoiaPlayer;
 import daiv.ui.AssetManager;
+import daiv.ui.custom.ParanoiaMessage;
+import daiv.ui.visuals.ParanoiaButton;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -14,6 +18,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -22,6 +27,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.List;
 
 import static daiv.ui.LayoutManager.panelOf;
 
@@ -33,8 +39,9 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
     private final JLabel lbPlayers = new JLabel();
     private final ParanoiaLobby lobby = new ParanoiaLobby();
     private final JLabel lbPassword = new JLabel();
-    private final JButton btnOpen = new JButton("START SERVER");
+    private final JButton btnOpen = new ParanoiaButton("START SERVER");
     private final JButton btnStart = new JButton("START GAME");
+    private JScrollPane playerList = new JScrollPane(new JPanel());
 
     public ServerFrame() {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -48,18 +55,18 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
 
         getContentPane().setLayout(new BorderLayout());
         add(createOperationPanel(), BorderLayout.EAST);
-//        add(new JScrollPane(playerList), BorderLayout.CENTER);
+        add(playerList, BorderLayout.CENTER);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-//                if (!lobby.isOpen() || ParanoiaMessage.confirm(
-//                    "You are shutting down the Alpha Complex. Continue?",
-//                    ServerFrame.this
-//                )){
+                if (!lobby.isOpen() || ParanoiaMessage.confirm(
+                    "You are shutting down the Alpha Complex. Continue?",
+                    ServerFrame.this
+                )){
                     lobby.close();
                     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
                     super.windowClosing(e);
-//                }
+                }
             }
         });
 
@@ -88,9 +95,9 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
         btnOpen.setFont(generalfont);
         btnOpen.addActionListener( e -> {
             if (lobby.isOpen()) {
-//                if (ParanoiaMessage.confirm("You are shutting down the Alpha Complex. Continue?", ServerFrame.this)) {
+                if (ParanoiaMessage.confirm("You are shutting down the Alpha Complex. Continue?", ServerFrame.this)) {
                     lobby.close();
-//                }
+                }
             } else {
                 startServerOperation();
             }
@@ -148,6 +155,17 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
     @Override
     public void updateConnections(int connections) {
         lbPlayers.setText("Connections: " + connections);
+    }
+
+    @Override
+    public void updatePlayers(List<ParanoiaPlayer> players) {
+        remove(playerList);
+        JPanel playerPanel = new JPanel();
+        playerPanel.setLayout(new BoxLayout(playerPanel, BoxLayout.PAGE_AXIS));
+        players.forEach(player -> playerPanel.add(player.createPanel()));
+        playerList = new JScrollPane(playerPanel);
+        add(playerList, BorderLayout.CENTER);
+        revalidate();
     }
 
     @Override
