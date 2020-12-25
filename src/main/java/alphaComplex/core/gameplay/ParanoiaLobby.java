@@ -7,6 +7,7 @@ import alphaComplex.core.networking.ServerListener;
 import daiv.networking.ParanoiaSocket;
 import daiv.networking.SocketListener;
 import daiv.networking.command.ParanoiaCommand;
+import daiv.networking.command.acpf.request.DefineRequest;
 import daiv.networking.command.acpf.request.LobbyRequest;
 import daiv.networking.command.general.DisconnectRequest;
 import daiv.networking.command.general.Ping;
@@ -107,13 +108,16 @@ public class ParanoiaLobby implements
             //parse command
             switch (parsedCommand.getType()) {
                 case PING:
-                    Ping.create(parsedCommand, player).execute();
+                    Ping.create(parsedCommand, player.getLatencyMeter()).execute();
                     break;
                 case LOBBY:
                     LobbyRequest.create(parsedCommand, player).execute();
                     break;
                 case DISCONNECT:
                     DisconnectRequest.create(parsedCommand, player).execute();
+                    break;
+                case ACPF:
+                    DefineRequest.create(parsedCommand, player).execute();
                     break;
                 default:
                     break;
