@@ -9,6 +9,7 @@ import daiv.networking.SocketListener;
 import daiv.networking.command.ParanoiaCommand;
 import daiv.networking.command.acpf.request.DefineRequest;
 import daiv.networking.command.acpf.request.LobbyRequest;
+import daiv.networking.command.acpf.request.SkillRequest;
 import daiv.networking.command.general.DisconnectRequest;
 import daiv.networking.command.general.Ping;
 import daiv.networking.command.general.PlayerBroadcast;
@@ -29,6 +30,7 @@ public class ParanoiaLobby implements
 
     private final ParanoiaServer server;
     private ParanoiaLobbyListener lobby;
+    private CharacterCreator characterCreator;
     private String password;
     private final List<ParanoiaPlayer> players = new ArrayList<>();
 
@@ -44,6 +46,11 @@ public class ParanoiaLobby implements
         lobby.updateConnections(server.getSockets());
         lobby.updatePlayers(players);
         server.start(port);
+    }
+
+    public void startGame() {
+        characterCreator = new CharacterCreator(players);
+        characterCreator.startRound(1);
     }
 
     public boolean isOpen() {
@@ -115,7 +122,6 @@ public class ParanoiaLobby implements
             String uuid = parsedCommand.getUUID();
             if(parsedCommand.getType() != ParanoiaCommand.CommandType.PING)
                 logger.info("Socket [" + uuid + "] sent a " + parsedCommand.getType() + " command");
-            //Get player TODO: NOT SAFE
             ParanoiaPlayer player = players.stream().filter(p ->
                 p.getUUID().equals(uuid)).findFirst().orElse(null);
             if(player == null) return;
@@ -134,6 +140,10 @@ public class ParanoiaLobby implements
                 case ACPF:
                     DefineRequest.create(parsedCommand, player).execute();
                     sendBroadcast(broadcastPlayers());
+                    break;
+                case SKILL:
+                    characterCreator.setPlayer(player);
+                    SkillRequest.create(parsedCommand, characterCreator).execute();
                     break;
                 default:
                     break;

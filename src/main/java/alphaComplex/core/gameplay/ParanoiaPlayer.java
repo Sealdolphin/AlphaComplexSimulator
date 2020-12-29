@@ -11,14 +11,21 @@ import daiv.networking.command.ParanoiaCommand;
 import daiv.networking.command.acpf.request.DefineRequest;
 import daiv.networking.command.acpf.request.LobbyRequest;
 import daiv.networking.command.acpf.response.LobbyResponse;
+import daiv.networking.command.acpf.response.SkillResponse;
 import daiv.networking.command.general.DisconnectRequest;
 import daiv.networking.command.general.Ping;
 import daiv.networking.command.general.PlayerBroadcast;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static alphaComplex.core.networking.ParanoiaServer.PROTOCOL_TIMEOUT;
 
@@ -42,6 +49,8 @@ public class ParanoiaPlayer implements
     private ACPFStatus create_status = ACPFStatus.DEFINE;
     private PlayerListener playerView;
     private final ServerListener lobby;
+
+    private final HashMap<String, Integer> attributes = new HashMap<>();
 
     private final Object start = new Object();
 
@@ -138,10 +147,6 @@ public class ParanoiaPlayer implements
         connection.sendMessage(command.toNetworkMessage(connection.getAddress(), uuid));
     }
 
-    public String getHost() {
-        return connection.getAddress();
-    }
-
     public String getPlayerName() {
         return name;
     }
@@ -172,5 +177,24 @@ public class ParanoiaPlayer implements
 
     public PlayerBroadcast.PlayerData broadcastSelf() {
         return new PlayerBroadcast.PlayerData(name, uuid, id, ParanoiaCommand.parseImage(clone.getPicture()));
+    }
+
+    public void setSkill(String skill, int value) {
+        attributes.put(skill, value);
+        sendCommand(new SkillResponse(skill, value, null));
+    }
+
+    public String getRandomSkill() {
+        String[] rem = Skill.remainder(attributes.keySet()).toArray(new String[]{});
+        return rem[new Random().nextInt(rem.length)];
+    }
+
+    public void sendSkillCommand(int round) {
+        sendCommand(
+            new SkillResponse("", round, attributes.entrySet().stream()
+                .filter(e -> e.getValue() != 0)
+                .map(Map.Entry::getKey).collect(Collectors.toList())
+            )
+        );
     }
 }

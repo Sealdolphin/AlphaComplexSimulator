@@ -41,7 +41,7 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
     private final ParanoiaLobby lobby = new ParanoiaLobby();
     private final JLabel lbPassword = new JLabel();
     private final JButton btnOpen = new ParanoiaButton("START SERVER");
-    private final JButton btnStart = new JButton("START GAME");
+    private final JButton btnStart = new ParanoiaButton("START GAME");
     private JScrollPane playerList = new JScrollPane(new JPanel());
 
     public ServerFrame() {
@@ -82,16 +82,9 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
         lbHost.setText("Address: localhost");
 
         lbStatus.setFont(AssetManager.getBoldFont(20));
-        //serverPropertyChanged(ServerProperty.STATUS);
-
         lbPort.setFont(generalfont);
-        //serverPropertyChanged(ServerProperty.PORT);
-
         lbPlayers.setFont(generalfont);
-        //serverPropertyChanged(ServerProperty.PLAYERS);
-
         lbPassword.setFont(AssetManager.getFont(13, true, true, false));
-        //serverPropertyChanged(ServerProperty.PASSWORD);
 
         btnOpen.setFont(generalfont);
         btnOpen.addActionListener( e -> {
@@ -110,6 +103,7 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
 
         btnStart.setFont(generalfont);
         btnStart.setEnabled(false);
+        btnStart.addActionListener( e -> lobby.startGame());
 
         Dimension size = new Dimension(200,10);
         btnStart.setMaximumSize(size);
@@ -135,16 +129,6 @@ public class ServerFrame extends JFrame implements ParanoiaLobbyListener {
         menu.add(miLogs);
         return menu;
     }
-//
-//    @Override
-//    public void serverPropertyChanged(ServerProperty property) {
-//        switch (property) {
-//            case STATUS:
-//                lbStatus.setText(lobby.isOpen() ? "ONLINE" : "OFFLINE");
-//                lbStatus.setForeground(lobby.isOpen() ? new Color(98, 160, 16) : new Color(170, 30, 30));
-//                break;
-//        }
-//    }
 
     private void startServerOperation() {
         String port = JOptionPane.showInputDialog("Input server port:");
